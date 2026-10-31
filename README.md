@@ -32,6 +32,19 @@ pnpm dev
 
 من اللوحة يمكن رفع صور PNG وJPG وJPEG، وربط كل باركود بمساعدة، ومعاينته وتعديله واستبدال صورته وإظهاره أو إخفاؤه وتنزيل الملف الأصلي وحذفه. الزائر لا يستطيع الرفع أو التعديل أو الحذف؛ سياسات RLS تسمح بقراءة الباركودات المنشورة فقط.
 
+## النشر على Vercel
+
+البناء ينتج `.vercel/output` عبر Nitro preset `vercel`. لا تضبط مجلد الإخراج في لوحة Vercel؛ المنصة تقرأ Build Output API من هذا المسار.
+
+1. استورد المستودع في Vercel. مدير الحزم يُكتشف من `pnpm-lock.yaml`.
+2. أمر البناء: `npm run build`. إطار العمل يبقى فارغًا (`framework: null` في `vercel.json`).
+3. أضف متغيرات البيئة قبل البناء، لأن Vite يدمج قيم `VITE_` أثناء البناء:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_URL`
+   - `SUPABASE_PUBLISHABLE_KEY`
+4. لا تضف مفتاح الخدمة. ثم انشر.
+
 ## التحقق
 
 ```sh
