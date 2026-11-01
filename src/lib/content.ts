@@ -1,5 +1,4 @@
 import universityLogo from "@/assets/jouf-university-logo.jpg";
-import studentAffairsLogo from "@/assets/student-affairs-logo.png";
 import technicalClubLogo from "@/assets/technical-club-logo.jpg";
 
 // All editable site text lives here.
@@ -10,7 +9,7 @@ export const TAGLINE = "ابتكار اليوم يصنع إعلام الغد";
 // Official supplied logos, in their designated order. Files are used as provided.
 export const LOGOS: { name: string; src: string }[] = [
   { name: "جامعة الجوف", src: universityLogo },
-  { name: "عمادة شؤون الطلاب بجامعة الجوف", src: studentAffairsLogo },
+  { name: "عمادة شؤون الطلاب بجامعة الجوف", src: "/student-affairs-logo.png" },
   { name: "النادي التقني بجامعة الجوف", src: technicalClubLogo },
 ];
 
