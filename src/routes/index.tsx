@@ -209,6 +209,9 @@ function Mechanism() {
   );
 }
 
+const challengeTitleHighlight =
+  "inline-block max-w-full rounded-md border border-glow/30 bg-glow/10 px-2.5 py-1";
+
 function Challenges() {
   const [openId, setOpenId] = useState<string | null>(null);
   return (
@@ -248,7 +251,9 @@ function Challenges() {
                       </span>
                       <Icon className="h-8 w-8 text-glow" />
                     </div>
-                    <h4 className="mb-2 text-lg font-bold">{p.title}</h4>
+                    <h4 className={`mb-2 text-lg font-bold ${challengeTitleHighlight}`}>
+                      {p.title}
+                    </h4>
                     <p className="leading-relaxed text-navy-foreground/70">{p.text}</p>
                     {helper && (
                       <IdeaHelper
@@ -293,7 +298,9 @@ function Challenges() {
                     >
                       <div className="flex items-baseline gap-2">
                         <span className="text-xl font-extrabold leading-snug">{card.number}</span>
-                        <h4 className="text-xl font-extrabold leading-snug">{card.name}</h4>
+                        <h4 className={`text-xl font-extrabold leading-snug ${challengeTitleHighlight}`}>
+                          {card.name}
+                        </h4>
                       </div>
                       <p className="mt-2 text-lg font-semibold leading-relaxed">{card.summary}</p>
                       <p className="mt-2 leading-relaxed text-navy-foreground/75">{card.note}</p>
