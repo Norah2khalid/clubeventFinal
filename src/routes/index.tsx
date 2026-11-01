@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   Activity,
-  ArrowDown,
+  ArrowLeft,
   BadgeCheck,
   Brain,
   Eye,
@@ -28,7 +28,6 @@ import heroBg from "@/assets/hero-bg.jpg";
 import { Logos } from "@/components/site/Logos";
 import { Reveal, SectionHeading } from "@/components/site/Reveal";
 import { IdeaHelper } from "@/components/site/IdeaHelper";
-import { ParticipationsBoard } from "@/components/site/ParticipationsBoard";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -37,7 +36,6 @@ import {
   EVENT_NAME,
   GOALS,
   HERO,
-  HERO_KICKER,
   IMPACT,
   MECHANISM,
   NAV,
@@ -76,12 +74,15 @@ const impactIcons = [Search, TrendingDown, Brain, Info, Scale];
 function Header() {
   const [open, setOpen] = useState(false);
   return (
-    <header className="border-b bg-card">
+    <header className="sticky top-0 z-50 border-b bg-card/90 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 py-3">
         <Logos />
       </div>
       <nav className="border-t">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
+          <a href="#top" className="font-display text-sm font-bold text-foreground">
+            {UI.brand}
+          </a>
           <div className="hidden items-center gap-6 md:flex">
             {NAV.map((n) => (
               <a
@@ -92,6 +93,9 @@ function Header() {
                 {n.label}
               </a>
             ))}
+            <Button asChild size="sm" className="bg-gradient-brand">
+              <a href="#challenges">{UI.helpersLink}</a>
+            </Button>
           </div>
           <Button
             variant="ghost"
@@ -105,9 +109,9 @@ function Header() {
         </div>
         {open && (
           <div className="flex flex-col gap-1 border-t px-4 py-3 md:hidden">
-            {NAV.map((n) => (
+            {[...NAV, { href: "#challenges", label: UI.helpersLink }].map((n) => (
               <a
-                key={n.href}
+                key={n.label}
                 href={n.href}
                 onClick={() => setOpen(false)}
                 className="rounded-md px-3 py-2 text-sm font-medium hover:bg-secondary"
@@ -138,9 +142,9 @@ function Hero() {
       <div className="absolute inset-0 -z-10 grid-pattern opacity-40" />
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-navy-deep/30 via-navy-deep/50 to-navy-deep" />
       <div className="mx-auto flex min-h-[60vh] max-w-5xl flex-col items-center justify-center px-4 py-24 text-center">
-        <p className="animate-fade-up mb-6 max-w-3xl text-balance text-base font-semibold leading-relaxed text-glow sm:text-xl">
-          {HERO_KICKER}
-        </p>
+        <span className="glass animate-fade-up mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm text-glow">
+          <span className="h-2 w-2 animate-pulse-glow rounded-full bg-glow" /> {EVENT_NAME}
+        </span>
         <h1
           className="animate-fade-up text-4xl font-black leading-[1.25] sm:text-5xl md:text-7xl"
           style={{ animationDelay: "120ms" }}
@@ -164,8 +168,16 @@ function Hero() {
             className="h-14 bg-gradient-brand px-8 text-base font-bold shadow-glow"
           >
             <a href="#challenges">
-              {UI.explore} <ArrowDown className="h-5 w-5" />
+              {UI.explore} <ArrowLeft className="h-5 w-5" />
             </a>
+          </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="glass h-14 px-8 text-base font-bold text-navy-foreground hover:bg-navy-foreground/15 hover:text-navy-foreground"
+          >
+            <a href="#mechanism">{UI.participate}</a>
           </Button>
         </div>
       </div>
@@ -175,7 +187,7 @@ function Hero() {
 
 function Mechanism() {
   return (
-    <section id="mechanism" className="scroll-mt-8 px-4 py-24">
+    <section id="mechanism" className="scroll-mt-28 px-4 py-24">
       <div className="mx-auto max-w-6xl">
         <Reveal>
           <SectionHeading eyebrow={UI.mechanismEyebrow} title={MECHANISM.title} />
@@ -190,14 +202,12 @@ function Mechanism() {
             const Icon = stepIcons[i] ?? Sparkles;
             return (
               <Reveal key={s} delay={i * 90}>
-                <div className="group flex h-full flex-col rounded-lg border bg-card p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-primary/40">
-                  <div className="mb-5 flex items-center justify-between">
-                    <span className="font-display text-4xl font-black leading-none text-secondary">
-                      {i + 1}
-                    </span>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-brand text-primary-foreground shadow-glow transition-transform group-hover:scale-110">
-                      <Icon className="h-6 w-6" />
-                    </div>
+                <div className="group relative h-full rounded-lg border bg-card p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-primary/40">
+                  <span className="absolute left-4 top-4 font-display text-4xl font-black text-secondary">
+                    {i + 1}
+                  </span>
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-brand text-primary-foreground shadow-glow transition-transform group-hover:scale-110">
+                    <Icon className="h-6 w-6" />
                   </div>
                   <p className="font-semibold leading-relaxed">{s}</p>
                 </div>
@@ -211,11 +221,10 @@ function Mechanism() {
 }
 
 function Challenges() {
-  const [openId, setOpenId] = useState<string | null>(null);
   return (
     <section
       id="challenges"
-      className="relative scroll-mt-8 overflow-hidden bg-gradient-navy px-4 py-24 text-navy-foreground"
+      className="relative scroll-mt-28 overflow-hidden bg-gradient-navy px-4 py-24 text-navy-foreground"
     >
       <div className="absolute inset-0 grid-pattern opacity-30" />
       <div className="relative mx-auto max-w-6xl">
@@ -244,21 +253,14 @@ function Challenges() {
                     className="group rounded-lg border border-navy-foreground/10 bg-navy-deep/50 p-6 transition-all hover:border-glow/50 hover:shadow-glow"
                   >
                     <div className="mb-4 flex items-center justify-between">
+                      <Icon className="h-8 w-8 text-glow" />
                       <span className="font-display text-sm font-bold text-navy-foreground/50">
                         {UI.problem} {i + 1}
                       </span>
-                      <Icon className="h-8 w-8 text-glow" />
                     </div>
                     <h4 className="mb-2 text-lg font-bold">{p.title}</h4>
                     <p className="leading-relaxed text-navy-foreground/70">{p.text}</p>
-                    {helper && (
-                      <IdeaHelper
-                        helper={helper}
-                        showTitle={false}
-                        open={openId === helper.id}
-                        onOpenChange={(next) => setOpenId(next ? helper.id : null)}
-                      />
-                    )}
+                    {helper && <IdeaHelper helper={helper} showTitle={false} />}
                   </div>
                 );
               })}
@@ -269,8 +271,13 @@ function Challenges() {
         <Reveal className="mt-8">
           <div className="relative overflow-hidden rounded-lg bg-gradient-brand p-[1px]">
             <div className="rounded-lg bg-navy-deep p-6 sm:p-10">
-              <div className="flex items-center justify-between gap-6">
-                <div className="min-w-0">
+              <div className="grid items-center gap-8 md:grid-cols-[auto_1fr]">
+                <div className="relative mx-auto flex h-28 w-28 items-center justify-center">
+                  <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-gradient-brand shadow-glow">
+                    <Radar className="h-12 w-12 text-primary-foreground" />
+                  </div>
+                </div>
+                <div>
                   <span className="text-sm font-semibold text-glow">{CHALLENGE_TWO.label}</span>
                   <h3 className="mt-1 text-2xl font-extrabold leading-snug sm:text-3xl">
                     {CHALLENGE_TWO.title}
@@ -279,19 +286,11 @@ function Challenges() {
                     {CHALLENGE_TWO.text}
                   </p>
                 </div>
-                <div className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-gradient-brand shadow-glow sm:h-28 sm:w-28">
-                  <Radar className="h-12 w-12 text-primary-foreground" />
-                </div>
               </div>
               <div className="mt-8 grid gap-6 md:grid-cols-2">
                 {HELPERS.slice(4).map((helper) => (
                   <div key={helper.id}>
-                    <IdeaHelper
-                      helper={helper}
-                      flush
-                      open={openId === helper.id}
-                      onOpenChange={(next) => setOpenId(next ? helper.id : null)}
-                    />
+                    <IdeaHelper helper={helper} flush />
                   </div>
                 ))}
               </div>
@@ -305,7 +304,7 @@ function Challenges() {
 
 function Goals() {
   return (
-    <section id="goals" className="scroll-mt-8 px-4 py-24">
+    <section id="goals" className="scroll-mt-28 px-4 py-24">
       <div className="mx-auto max-w-6xl">
         <Reveal>
           <SectionHeading eyebrow={UI.goalsEyebrow} title={UI.goalsTitle} />
@@ -382,6 +381,9 @@ function Footer() {
                 {n.label}
               </a>
             ))}
+            <a href="#challenges" className="font-semibold text-glow">
+              {UI.helpersLink}
+            </a>
           </div>
         </div>
         <div className="mt-10 border-t border-navy-foreground/10 pt-6 text-center text-sm text-navy-foreground/60">
@@ -400,7 +402,6 @@ function Index() {
         <Hero />
         <Mechanism />
         <Challenges />
-        <ParticipationsBoard />
         <Goals />
         <Impact />
       </main>

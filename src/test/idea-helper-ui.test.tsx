@@ -1,137 +1,67 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useState, type ReactNode } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IdeaHelper } from "@/components/site/IdeaHelper";
 import { HELPERS, UI } from "@/lib/content";
-import { specialistPrompt } from "@/lib/idea-helpers";
-import { toast } from "sonner";
-
-const { insert } = vi.hoisted(() => ({
-  insert: vi.fn(() => Promise.resolve({ error: null as { message: string } | null })),
-}));
-
-vi.mock("sonner", () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: (table: string) => {
-      if (table === "participations") return { insert };
-      return {
-        select: () => ({
+    from: () => ({
+      select: () => ({
+        eq: () => ({
           eq: () => ({
-            eq: () => ({
-              order: () => Promise.resolve({ data: [], error: null }),
-            }),
+            order: () => Promise.resolve({ data: [], error: null }),
           }),
         }),
-      };
-    },
+      }),
+    }),
   },
 }));
-
-function renderHelper(ui: ReactNode) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
-}
-
-function Pair() {
-  const [openId, setOpenId] = useState<string | null>(null);
-  return (
-    <>
-      {HELPERS.slice(0, 2).map((helper) => (
-        <IdeaHelper
-          key={helper.id}
-          helper={helper}
-          open={openId === helper.id}
-          onOpenChange={(next) => setOpenId(next ? helper.id : null)}
-        />
-      ))}
-    </>
-  );
-}
 
 describe("idea helper controls", () => {
   const writeText = vi.fn<(value: string) => Promise<void>>().mockResolvedValue(undefined);
 
   beforeEach(() => {
     writeText.mockClear();
-    insert.mockReset();
-    insert.mockResolvedValue({ error: null });
-    vi.mocked(toast.success).mockClear();
-    vi.mocked(toast.error).mockClear();
     Object.assign(navigator, { clipboard: { writeText } });
   });
 
-  it("opens one participation panel at a time", () => {
-    renderHelper(<Pair />);
-
-    fireEvent.click(screen.getAllByRole("button", { name: "المشاركة" })[0]!);
-    expect(screen.getByRole("button", { name: "إغلاق" })).toHaveAttribute(
-      "aria-controls",
-      "problem_1-panel",
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "المشاركة" }));
-    expect(screen.getByRole("button", { name: "إغلاق" })).toHaveAttribute(
-      "aria-controls",
-      "problem_2-panel",
-    );
-  });
-
-  it("copies the guidance prompt unchanged and without the participant text", async () => {
+  it("builds a participant-specific result and copies the prompt and the result separately", async () => {
     const helper = HELPERS[0];
     if (!helper) throw new Error("missing helper");
-    renderHelper(<IdeaHelper helper={helper} open onOpenChange={() => {}} />);
-    const prompt = screen.getByLabelText(UI.promptLabel) as HTMLTextAreaElement;
-    expect(prompt.value).toBe(specialistPrompt(helper));
-    expect(prompt).toHaveAttribute("readonly");
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <IdeaHelper helper={helper} />
+      </QueryClientProvider>,
+    );
 
-    fireEvent.change(screen.getByLabelText(UI.idea), { target: { value: "XZ-idea-8841" } });
-    fireEvent.click(screen.getByRole("button", { name: UI.copy }));
-    expect(writeText).toHaveBeenCalledWith(specialistPrompt(helper));
-    expect(specialistPrompt(helper)).not.toContain("XZ-idea-8841");
-    expect(writeText.mock.calls[0]?.[0]).not.toContain("XZ-idea-8841");
-    expect(await screen.findByRole("button", { name: UI.copied })).toBeInTheDocument();
-  });
-
-  it("refuses an empty participation and saves a real one once", async () => {
-    const helper = HELPERS[0];
-    if (!helper) throw new Error("missing helper");
-    renderHelper(<IdeaHelper helper={helper} open onOpenChange={() => {}} />);
-
-    const submit = screen.getByRole("button", { name: UI.submitParticipation });
-    fireEvent.click(submit);
-    expect(insert).not.toHaveBeenCalled();
-    expect(toast.success).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith(UI.participationEmpty);
+    expect(screen.getByText(helper.summary)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: UI.openHelper }));
+    fireEvent.click(screen.getByRole("button", { name: UI.copyResult }));
+    expect(writeText).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByLabelText(UI.idea), {
-      target: { value: "  فكرتي الخاصة  \nتفاصيل الحل" },
+      target: { value: "فكرتي الخاصة للتحقق المبكر" },
     });
-    fireEvent.click(submit);
-    fireEvent.click(submit);
+    fireEvent.click(screen.getByRole("button", { name: UI.prepare }));
 
-    await waitFor(() => expect(insert).toHaveBeenCalledTimes(1));
-    expect(insert).toHaveBeenCalledWith({
-      title: "فكرتي الخاصة",
-      body: "فكرتي الخاصة  \nتفاصيل الحل",
-      section: "problem_1",
-    });
-    await waitFor(() => expect(toast.success).toHaveBeenCalledWith(UI.participationSaved));
-  });
+    const guidance = screen.getByLabelText(UI.promptLabel) as HTMLTextAreaElement;
+    const result = screen.getByLabelText(UI.resultLabel) as HTMLTextAreaElement;
+    expect(guidance.value).not.toContain("فكرتي الخاصة للتحقق المبكر");
+    expect(result.value).toContain("فكرتي الخاصة للتحقق المبكر");
+    expect(result.value).toContain("لا تستبدل فكرة المشارك بفكرة أخرى.");
 
-  it("does not announce success when saving fails", async () => {
-    const helper = HELPERS[3];
-    if (!helper) throw new Error("missing helper");
-    insert.mockResolvedValue({ error: { message: "denied" } });
-    renderHelper(<IdeaHelper helper={helper} open onOpenChange={() => {}} />);
-    fireEvent.change(screen.getByLabelText(UI.idea), { target: { value: "حل للتحقق" } });
-    fireEvent.click(screen.getByRole("button", { name: UI.submitParticipation }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(UI.participationFailed));
-    expect(toast.success).not.toHaveBeenCalled();
-    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ section: "problem_4" }));
+    fireEvent.click(screen.getByRole("button", { name: UI.copy }));
+    fireEvent.click(screen.getByRole("button", { name: UI.copyResult }));
+    expect(writeText).toHaveBeenNthCalledWith(
+      1,
+      expect.not.stringContaining("فكرتي الخاصة للتحقق المبكر"),
+    );
+    expect(writeText).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("فكرتي الخاصة للتحقق المبكر"),
+    );
+    expect(await screen.findByRole("button", { name: UI.copiedResult })).toBeInTheDocument();
   });
 });

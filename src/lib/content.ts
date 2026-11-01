@@ -4,7 +4,6 @@ import technicalClubLogo from "@/assets/technical-club-logo.jpg";
 
 // All editable site text lives here.
 export const EVENT_NAME = "فعالية ابتكار حلول مواجهة التضليل الإعلامي";
-export const HERO_KICKER = "فعالية النادي التقني في يوم الدراية الإعلامية المعلوماتية";
 export const TAGLINE = "ابتكار اليوم يصنع إعلام الغد";
 
 // Official supplied logos, in their designated order. Files are used as provided.
@@ -91,6 +90,7 @@ export const IMPACT = {
 
 export const NAV = [
   { href: "#mechanism", label: "آلية المشاركة" },
+  { href: "#challenges", label: "التحديات" },
   { href: "#goals", label: "الأهداف" },
 ];
 
@@ -152,29 +152,7 @@ export const UI = {
   idea: "فكرتك أو وصف الحل",
   details: "تفاصيل المشروع أو التقنية (اختياري)",
   prepare: "تحسين فكرتي",
-  openHelper: "المشاركة",
-  shareTitle: "شارك فكرتك",
-  submitParticipation: "رفع المشاركة",
-  submitting: "جارٍ الرفع",
-  participationEmpty: "اكتب فكرتك قبل رفع المشاركة.",
-  participationSaved: "تم رفع مشاركتك.",
-  participationFailed: "تعذّر حفظ المشاركة. حاول مرة أخرى.",
-  participationsEyebrow: "ما وصل من المشاركين",
-  participationsTitle: "مشاركات الفعالية",
-  winnerFirst: "الفكرة الفائزة الأولى",
-  winnerSecond: "الفكرة الفائزة الثانية",
-  winnerEmpty: "لم تُحدَّد بعد",
-  participationsEmpty: "لا توجد مشاركات بعد.",
-  participationsError: "تعذّر تحميل المشاركات.",
-  promoteFirst: "ترقية إلى الفكرة الفائزة الأولى",
-  promoteSecond: "ترقية إلى الفكرة الفائزة الثانية",
-  clearWinner: "إزالة من الفائزين",
-  confirmDeleteParticipation: "هل تريد حذف هذه المشاركة نهائيًا؟",
-  confirmDelete: "تأكيد الحذف",
-  participationDeleted: "تم حذف المشاركة.",
-  winnerUpdated: "تم تحديث الأفكار الفائزة.",
-  adminOnly: "هذا الإجراء متاح للمسؤول فقط.",
-  sentAt: "تاريخ الإرسال",
+  openHelper: "عرض المساعدة",
   copy: "نسخ البرومبت",
   copyResult: "نسخ النتيجة",
   copied: "تم نسخ البرومبت",
@@ -234,6 +212,7 @@ export const UI = {
   brand: "ابتكار ضد التضليل",
   menu: "القائمة",
   explore: "استكشف التحديات",
+  participate: "قدّم مشاركتك",
   goalsEyebrow: "لماذا هذه الفعالية",
   goalsTitle: "أهداف الفعالية",
   impactEyebrow: "أثر الحلول الرقمية",

@@ -100,15 +100,7 @@ function AdminPage() {
     <div className="min-h-screen bg-muted">
       <header className="bg-gradient-navy text-navy-foreground">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-6">
-          <div>
-            <h1 className="text-2xl font-bold">{UI.adminTitle}</h1>
-            <a
-              href="/#participations"
-              className="mt-1 inline-block text-sm font-semibold text-glow"
-            >
-              {UI.participationsTitle}
-            </a>
-          </div>
+          <h1 className="text-2xl font-bold">{UI.adminTitle}</h1>
           <Button variant="secondary" onClick={() => supabase.auth.signOut()}>
             <LogOut className="h-4 w-4" />
             {UI.signOut}

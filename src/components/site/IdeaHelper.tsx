@@ -1,19 +1,22 @@
-import { useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronDown, Copy } from "lucide-react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Check, Copy, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { UI } from "@/lib/content";
-import { specialistPrompt, type Helper } from "@/lib/idea-helpers";
-import { participationTitle } from "@/lib/participations";
+import { buildIdeaPrompt, specialistPrompt, type Helper } from "@/lib/idea-helpers";
 import { BarcodeImage } from "./BarcodeImage";
 
-async function copyText(value: string) {
+async function copyText(value: string, success: string, empty: string) {
+  if (!value.trim()) {
+    toast.error(empty);
+    return false;
+  }
   try {
     await navigator.clipboard.writeText(value);
-    toast.success(UI.copied);
+    toast.success(success);
     return true;
   } catch {
     toast.error(UI.copyFailed);
@@ -25,20 +28,16 @@ export function IdeaHelper({
   helper,
   flush = false,
   showTitle = true,
-  open,
-  onOpenChange,
 }: {
   helper: Helper;
   flush?: boolean;
   showTitle?: boolean;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
 }) {
-  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
   const [idea, setIdea] = useState("");
-  const [saving, setSaving] = useState(false);
-  const savingRef = useRef(false);
-  const [copied, setCopied] = useState(false);
+  const [details, setDetails] = useState("");
+  const [result, setResult] = useState("");
+  const [copied, setCopied] = useState<"" | "prompt" | "result">("");
   const guidance = specialistPrompt(helper);
   const { data: barcodes = [] } = useQuery({
     queryKey: ["published-barcodes", helper.id],
@@ -55,47 +54,32 @@ export function IdeaHelper({
     },
   });
 
-  async function copyPrompt() {
-    const ok = await copyText(guidance);
-    if (!ok) return;
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2500);
-  }
-
-  async function submit() {
-    const body = idea.trim();
-    if (!body) {
-      toast.error(UI.participationEmpty);
+  function improve() {
+    if (!idea.trim()) {
+      toast.error(UI.ideaRequired);
       return;
     }
-    if (savingRef.current) return;
-    savingRef.current = true;
-    setSaving(true);
-    try {
-      const { error } = await supabase.from("participations").insert({
-        title: participationTitle(body),
-        body,
-        section: helper.id,
-      });
-      if (error) {
-        toast.error(UI.participationFailed);
-        return;
-      }
-      toast.success(UI.participationSaved);
-      setIdea("");
-      await queryClient.invalidateQueries({ queryKey: ["participations"] });
-    } catch {
-      toast.error(UI.participationFailed);
-    } finally {
-      savingRef.current = false;
-      setSaving(false);
-    }
+    setResult(buildIdeaPrompt(helper, idea, details));
+  }
+
+  async function copy(kind: "prompt" | "result") {
+    const value = kind === "prompt" ? guidance : result;
+    const ok = await copyText(
+      value,
+      kind === "prompt" ? UI.copied : UI.copiedResult,
+      kind === "prompt" ? UI.copyFailed : UI.resultRequired,
+    );
+    if (!ok) return;
+    setCopied(kind);
+    window.setTimeout(() => setCopied((current) => (current === kind ? "" : current)), 2500);
   }
 
   return (
     <div
       id={helper.id}
-      className={flush ? "scroll-mt-8" : "mt-5 scroll-mt-8 border-t border-navy-foreground/20 pt-4"}
+      className={
+        flush ? "scroll-mt-28" : "mt-5 scroll-mt-28 border-t border-navy-foreground/20 pt-4"
+      }
     >
       <div className="flex flex-wrap items-start gap-4">
         <div className="min-w-0 flex-1">
@@ -103,17 +87,14 @@ export function IdeaHelper({
           <p className="mt-2 text-sm leading-relaxed text-navy-foreground/80">{helper.summary}</p>
           <p className="mt-2 text-sm leading-relaxed text-navy-foreground/70">{UI.intro}</p>
           <Button
-            type="button"
             variant="secondary"
             className="mt-4 h-auto whitespace-normal text-right"
             aria-expanded={open}
             aria-controls={`${helper.id}-panel`}
-            onClick={() => onOpenChange(!open)}
+            onClick={() => setOpen((value) => !value)}
           >
+            <Sparkles className="h-4 w-4 shrink-0" />
             {open ? UI.close : UI.openHelper}
-            <ChevronDown
-              className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
-            />
           </Button>
         </div>
         {barcodes.map((barcode) => (
@@ -128,45 +109,89 @@ export function IdeaHelper({
         inert={!open}
       >
         <div className="overflow-hidden">
-          <div className="mt-4 space-y-4 rounded-lg bg-card p-4 text-card-foreground sm:p-5">
-            <h5 className="text-base font-bold">{UI.shareTitle}</h5>
+          <div className="mt-4 space-y-4 text-card-foreground">
+            <p className="text-sm leading-relaxed text-navy-foreground/80">{UI.mode}</p>
             <div>
-              <label htmlFor={`${helper.id}-idea`} className="mb-2 block text-sm">
+              <label
+                htmlFor={`${helper.id}-idea`}
+                className="mb-2 block text-sm text-navy-foreground"
+              >
                 {UI.idea}
               </label>
               <Textarea
+                className="bg-card text-card-foreground"
                 id={`${helper.id}-idea`}
                 value={idea}
-                maxLength={8000}
-                onChange={(event) => setIdea(event.target.value)}
-                rows={5}
+                onChange={(e) => {
+                  setIdea(e.target.value);
+                  setResult("");
+                }}
+                rows={4}
               />
             </div>
             <div>
-              <label htmlFor={`${helper.id}-prompt`} className="mb-2 block text-sm">
+              <label
+                htmlFor={`${helper.id}-details`}
+                className="mb-2 block text-sm text-navy-foreground"
+              >
+                {UI.details}
+              </label>
+              <Textarea
+                className="bg-card text-card-foreground"
+                id={`${helper.id}-details`}
+                value={details}
+                onChange={(e) => {
+                  setDetails(e.target.value);
+                  setResult("");
+                }}
+                rows={2}
+              />
+            </div>
+            <Button variant="secondary" className="h-11 whitespace-normal" onClick={improve}>
+              <Sparkles className="h-4 w-4" />
+              {UI.prepare}
+            </Button>
+            <div>
+              <label
+                htmlFor={`${helper.id}-prompt`}
+                className="mb-2 block text-sm text-navy-foreground"
+              >
                 {UI.promptLabel}
               </label>
               <Textarea
                 id={`${helper.id}-prompt`}
+                className="bg-card text-card-foreground"
                 aria-label={UI.promptLabel}
                 value={guidance}
                 readOnly
                 rows={8}
               />
-              <Button type="button" variant="secondary" className="mt-3 h-11" onClick={copyPrompt}>
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? UI.copied : UI.copy}
+              <Button variant="secondary" className="mt-3 h-11" onClick={() => copy("prompt")}>
+                {copied === "prompt" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied === "prompt" ? UI.copied : UI.copy}
               </Button>
             </div>
-            <Button
-              type="button"
-              className="h-11 bg-gradient-brand"
-              disabled={saving}
-              aria-busy={saving}
-              onClick={submit}
-            >
-              {saving ? UI.submitting : UI.submitParticipation}
-            </Button>
+            <div>
+              <label
+                htmlFor={`${helper.id}-result`}
+                className="mb-2 block text-sm text-navy-foreground"
+              >
+                {UI.resultLabel}
+              </label>
+              <Textarea
+                id={`${helper.id}-result`}
+                className="bg-card text-card-foreground"
+                aria-label={UI.resultLabel}
+                value={result}
+                placeholder={UI.resultRequired}
+                readOnly
+                rows={8}
+              />
+              <Button variant="secondary" className="mt-3 h-11" onClick={() => copy("result")}>
+                {copied === "result" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied === "result" ? UI.copiedResult : UI.copyResult}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
