@@ -175,30 +175,30 @@ function Hero() {
 function Mechanism() {
   return (
     <section id="mechanism" className="scroll-mt-8 px-4 py-24">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-5xl">
         <Reveal>
           <SectionHeading eyebrow={UI.mechanismEyebrow} title={MECHANISM.title} />
         </Reveal>
         <Reveal>
-          <blockquote className="mx-auto mb-16 max-w-3xl rounded-3xl border border-primary/15 border-s-4 border-s-primary/80 bg-card p-7 text-lg leading-[1.95] shadow-soft sm:p-9 sm:text-xl">
+          <blockquote className="mx-auto mb-12 max-w-3xl rounded-3xl border border-primary/15 border-s-4 border-s-primary/80 bg-card p-5 text-base leading-[1.85] shadow-soft sm:p-7 sm:text-lg">
             «{MECHANISM.text}»
           </blockquote>
         </Reveal>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {MECHANISM.steps.map((s, i) => {
             const Icon = stepIcons[i] ?? Sparkles;
             return (
               <Reveal key={s} delay={i * 90}>
-                <div className="group flex h-full flex-col rounded-3xl border border-border/80 bg-card p-6 shadow-soft transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-glow sm:p-7">
-                  <div className="mb-5 flex items-center justify-between">
-                    <span className="font-display text-4xl font-black leading-none text-secondary">
+                <div className="group flex h-full flex-col rounded-3xl border border-border/80 bg-card p-4 shadow-soft transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-glow sm:p-5">
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="font-display text-3xl font-black leading-none text-secondary">
                       {i + 1}
                     </span>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-brand text-primary-foreground shadow-glow transition-transform group-hover:scale-110">
-                      <Icon className="h-6 w-6" />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-brand text-primary-foreground shadow-glow transition-transform group-hover:scale-110">
+                      <Icon className="h-5 w-5" />
                     </div>
                   </div>
-                  <p className="font-semibold leading-relaxed">{s}</p>
+                  <p className="text-sm font-semibold leading-relaxed sm:text-base">{s}</p>
                 </div>
               </Reveal>
             );
@@ -219,14 +219,14 @@ function Challenges() {
       className="relative scroll-mt-8 overflow-hidden bg-gradient-navy px-4 py-24 text-navy-foreground"
     >
       <div className="absolute inset-0 grid-pattern opacity-30" />
-      <div className="relative mx-auto max-w-6xl">
+      <div className="relative mx-auto max-w-5xl">
         <Reveal>
           <SectionHeading eyebrow={UI.challengesEyebrow} title={UI.challengesTitle} light />
         </Reveal>
 
         <Reveal>
-          <div className="glass rounded-3xl p-6 sm:p-10">
-            <div className="mb-8 flex flex-wrap items-center gap-4">
+          <div className="glass rounded-3xl p-4 sm:p-8">
+            <div className="mb-6 flex flex-wrap items-center gap-3">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-navy-foreground text-navy-deep shadow-soft">
                 <span className="font-display text-2xl font-black">𝕏</span>
               </div>
@@ -239,25 +239,25 @@ function Challenges() {
                 </h3>
               </div>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 md:grid-cols-2">
               {CHALLENGE_ONE.problems.map((p, i) => {
                 const Icon = problemIcons[i] ?? Sparkles;
                 const helper = HELPERS[i];
                 return (
                   <div
                     key={p.title}
-                    className="group rounded-3xl border border-navy-foreground/10 bg-navy-deep/45 p-6 shadow-soft transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-glow/35 hover:shadow-glow sm:p-7"
+                    className="group rounded-3xl border border-navy-foreground/10 bg-navy-deep/45 p-4 shadow-soft transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-glow/35 hover:shadow-glow sm:p-5"
                   >
-                    <div className="mb-4 flex items-center justify-between">
+                    <div className="mb-3 flex items-center justify-between">
                       <span className="font-display text-sm font-semibold text-glow/80">
                         {UI.problem} {i + 1}
                       </span>
-                      <Icon className="h-8 w-8 text-glow" />
+                      <Icon className="h-6 w-6 text-glow" />
                     </div>
-                    <h4 className="mb-3 text-lg font-extrabold leading-snug">
+                    <h4 className="mb-2 text-base font-extrabold leading-snug">
                       <span className={challengeTitleHighlight}>{p.title}</span>
                     </h4>
-                    <p className="text-base leading-[1.9] text-navy-foreground/75">{p.text}</p>
+                    <p className="text-sm leading-relaxed text-navy-foreground/75 sm:text-base">{p.text}</p>
                     {helper && (
                       <IdeaHelper
                         helper={helper}
@@ -273,9 +273,9 @@ function Challenges() {
           </div>
         </Reveal>
 
-        <Reveal className="mt-8">
+        <Reveal className="mt-6">
           <div className="relative overflow-hidden rounded-[1.9rem] bg-gradient-brand p-px shadow-soft">
-            <div className="rounded-[1.85rem] bg-navy-deep p-6 sm:p-10">
+            <div className="rounded-[1.85rem] bg-navy-deep p-4 sm:p-8">
               <div className="flex items-center justify-between gap-6">
                 <div className="min-w-0">
                   <span className="inline-flex rounded-full bg-glow/15 px-3 py-1 text-sm font-semibold text-glow">
@@ -288,27 +288,27 @@ function Challenges() {
                     {CHALLENGE_TWO.text}
                   </p>
                 </div>
-                <div className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-gradient-brand shadow-glow sm:h-28 sm:w-28">
-                  <Radar className="h-12 w-12 text-primary-foreground" />
+                <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-brand shadow-glow sm:h-24 sm:w-24">
+                  <Radar className="h-10 w-10 text-primary-foreground" />
                 </div>
               </div>
-              <div className="mt-8 grid gap-4 md:grid-cols-2">
+              <div className="mt-6 grid gap-3 md:grid-cols-2">
                 {CHALLENGE_TWO.cards.map((card) => {
                   const helper = HELPERS.find((item) => item.id === card.helperId);
                   if (!helper) return null;
                   return (
                     <article
                       key={card.helperId}
-                      className="flex h-full flex-col rounded-[1.6rem] border border-glow/15 bg-navy/35 p-6 shadow-soft transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-glow/40 hover:shadow-glow sm:p-7"
+                      className="flex h-full flex-col rounded-[1.6rem] border border-glow/15 bg-navy/35 p-4 shadow-soft transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-glow/40 hover:shadow-glow sm:p-5"
                     >
                       <div className="flex items-baseline gap-2">
-                        <span className="text-xl font-extrabold leading-snug">{card.number}</span>
-                        <h4 className="text-xl font-extrabold leading-snug">
+                        <span className="text-lg font-extrabold leading-snug">{card.number}</span>
+                        <h4 className="text-lg font-extrabold leading-snug">
                           <span className={challengeTitleHighlight}>{card.name}</span>
                         </h4>
                       </div>
-                      <p className="mt-4 text-lg font-semibold leading-[1.8] text-navy-foreground">{card.summary}</p>
-                      <p className="mt-2 text-base leading-[1.9] text-navy-foreground/70">{card.note}</p>
+                      <p className="mt-3 text-base font-semibold leading-relaxed text-navy-foreground">{card.summary}</p>
+                      <p className="mt-1.5 text-sm leading-relaxed text-navy-foreground/70 sm:text-base">{card.note}</p>
                       <IdeaHelper
                         helper={helper}
                         flush
@@ -333,24 +333,24 @@ function Challenges() {
 function Goals() {
   return (
     <section id="goals" className="scroll-mt-8 px-4 py-24">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-5xl">
         <Reveal>
           <SectionHeading eyebrow={UI.goalsEyebrow} title={UI.goalsTitle} />
         </Reveal>
-        <div className="flex flex-wrap justify-center gap-5">
+        <div className="flex flex-wrap justify-center gap-3">
           {GOALS.map((g, i) => {
             const Icon = goalIcons[i] ?? Sparkles;
             return (
               <Reveal
                 key={g}
                 delay={i * 80}
-                className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]"
+                className="w-full sm:w-[calc(50%-6px)] lg:w-[calc(33.333%-8px)]"
               >
-                <div className="flex h-full items-start gap-4 rounded-3xl border border-border/80 bg-card p-6 shadow-soft transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-glow sm:p-7">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
-                    <Icon className="h-6 w-6" />
+                <div className="flex h-full items-start gap-3 rounded-3xl border border-border/80 bg-card p-4 shadow-soft transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-glow sm:p-5">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
+                    <Icon className="h-5 w-5" />
                   </div>
-                  <p className="pt-2 text-lg font-semibold leading-[1.85] text-foreground">{g}</p>
+                  <p className="pt-1.5 text-sm font-semibold leading-relaxed text-foreground sm:text-base">{g}</p>
                 </div>
               </Reveal>
             );
@@ -364,23 +364,23 @@ function Goals() {
 function Impact() {
   return (
     <section className="relative overflow-hidden bg-navy-deep px-4 py-24 text-navy-foreground">
-      <div className="relative mx-auto max-w-6xl">
+      <div className="relative mx-auto max-w-5xl">
         <Reveal>
           <SectionHeading eyebrow={UI.impactEyebrow} title={IMPACT.title} light />
         </Reveal>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {IMPACT.items.map((t, i) => {
             const Icon = impactIcons[i] ?? Sparkles;
             return (
               <Reveal key={t} delay={i * 80}>
-                <div className="glass flex h-full flex-col items-center rounded-3xl p-6 text-center shadow-soft transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-glow sm:p-7">
+                <div className="glass flex h-full flex-col items-center rounded-3xl p-4 text-center shadow-soft transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-glow sm:p-5">
                   <div
-                    className="mb-4 flex h-14 w-14 animate-float items-center justify-center rounded-full bg-gradient-brand"
+                    className="mb-3 flex h-12 w-12 animate-float items-center justify-center rounded-full bg-gradient-brand"
                     style={{ animationDelay: `${i * 400}ms` }}
                   >
-                    <Icon className="h-7 w-7 text-primary-foreground" />
+                    <Icon className="h-6 w-6 text-primary-foreground" />
                   </div>
-                  <p className="font-semibold leading-[1.85] text-navy-foreground/90">{t}</p>
+                  <p className="text-sm font-semibold leading-relaxed text-navy-foreground/90 sm:text-base">{t}</p>
                 </div>
               </Reveal>
             );
