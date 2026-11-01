@@ -59,7 +59,7 @@ function AdminPage() {
   if (!supabaseConfigured) {
     return (
       <Center>
-        <div className="max-w-md rounded-lg border bg-card p-8 text-center shadow-soft">
+        <div className="max-w-md rounded-3xl border bg-card p-8 text-center shadow-soft">
           <h1 className="text-xl font-bold">{UI.adminTitle}</h1>
           <p className="mt-2 text-muted-foreground">{UI.configError}</p>
           <Link to="/" className="mt-6 inline-block text-sm text-primary">
@@ -86,7 +86,7 @@ function AdminPage() {
   if (!isAdmin)
     return (
       <Center>
-        <div className="max-w-md rounded-lg border bg-card p-8 text-center shadow-soft">
+        <div className="max-w-md rounded-3xl border bg-card p-8 text-center shadow-soft">
           <ShieldAlert className="mx-auto mb-4 h-12 w-12 text-destructive" />
           <h1 className="text-xl font-bold">{UI.denied}</h1>
           <p className="mt-2 text-muted-foreground">{UI.deniedText}</p>
@@ -135,7 +135,7 @@ function Login() {
     <Center>
       <form
         onSubmit={submit}
-        className="w-full max-w-sm space-y-4 rounded-lg border bg-card p-8 shadow-soft"
+        className="w-full max-w-sm space-y-4 rounded-3xl border bg-card p-8 shadow-soft"
       >
         <h1 className="text-center text-2xl font-extrabold">{UI.login}</h1>
         <Input

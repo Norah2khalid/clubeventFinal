@@ -92,7 +92,7 @@ export function IdeaHelper({
           </Button>
         </div>
         {barcodes.map((barcode) => (
-          <div key={barcode.id} className="rounded-md bg-card p-2 text-card-foreground">
+          <div key={barcode.id} className="rounded-2xl bg-card p-2 text-card-foreground shadow-soft">
             <BarcodeImage barcode={barcode} compact />
           </div>
         ))}
@@ -103,8 +103,8 @@ export function IdeaHelper({
         inert={!open}
       >
         <div className="overflow-hidden">
-          <div className="mt-4 space-y-4 rounded-lg bg-card p-4 text-card-foreground sm:p-5">
-            <p className="text-sm leading-relaxed">{UI.externalParticipation}</p>
+          <div className="mt-4 space-y-4 rounded-3xl bg-card p-5 text-card-foreground shadow-soft sm:p-6">
+            <p className="text-sm leading-[1.9]">{UI.externalParticipation}</p>
             <ul className="list-disc space-y-1 ps-5 text-sm font-semibold">
               {EXTERNAL_FIELDS.map((field) => (
                 <li key={field}>{field}</li>

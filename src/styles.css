@@ -46,42 +46,42 @@
 }
 
 :root {
-  --radius: 0.5rem;
-  --background: oklch(0.995 0.002 305);
-  --foreground: oklch(0.25 0.09 305);
-  --card: oklch(1 0 0);
+  --radius: 1.15rem;
+  --background: oklch(0.984 0.01 305);
+  --foreground: oklch(0.28 0.065 305);
+  --card: oklch(0.997 0.003 305);
   --logo-surface: oklch(1 0 0);
-  --card-foreground: oklch(0.25 0.09 305);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.09 305);
-  --primary: oklch(0.4 0.16 305);
+  --card-foreground: oklch(0.28 0.065 305);
+  --popover: oklch(0.997 0.003 305);
+  --popover-foreground: oklch(0.28 0.065 305);
+  --primary: oklch(0.42 0.145 305);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.025 305);
-  --secondary-foreground: oklch(0.32 0.12 305);
-  --muted: oklch(0.975 0.008 305);
-  --muted-foreground: oklch(0.5 0.02 305);
-  --accent: oklch(0.93 0.045 305);
-  --accent-foreground: oklch(0.3 0.12 305);
+  --secondary: oklch(0.955 0.028 305);
+  --secondary-foreground: oklch(0.34 0.1 305);
+  --muted: oklch(0.972 0.012 305);
+  --muted-foreground: oklch(0.48 0.035 305);
+  --accent: oklch(0.94 0.038 305);
+  --accent-foreground: oklch(0.32 0.1 305);
   --destructive: oklch(0.58 0.22 27);
   --destructive-foreground: oklch(0.99 0 0);
   --success: oklch(0.65 0.16 160);
-  --border: oklch(0.9 0.025 305);
-  --input: oklch(0.88 0.03 305);
-  --ring: oklch(0.55 0.15 305);
-  --navy: oklch(0.32 0.13 305);
-  --navy-deep: oklch(0.23 0.09 305);
-  --navy-foreground: oklch(0.99 0.003 305);
-  --glow: oklch(0.83 0.085 305);
+  --border: oklch(0.91 0.02 305);
+  --input: oklch(0.9 0.022 305);
+  --ring: oklch(0.55 0.13 305);
+  --navy: oklch(0.34 0.11 305);
+  --navy-deep: oklch(0.26 0.08 305);
+  --navy-foreground: oklch(0.985 0.008 305);
+  --glow: oklch(0.84 0.07 305);
   --chart-1: oklch(0.55 0.2 258);
   --chart-2: oklch(0.8 0.14 215);
   --chart-3: oklch(0.65 0.16 160);
   --chart-4: oklch(0.75 0.15 80);
   --chart-5: oklch(0.6 0.2 300);
 
-  --gradient-brand: linear-gradient(135deg, var(--primary), var(--glow));
-  --gradient-navy: linear-gradient(180deg, var(--navy-deep), var(--navy));
-  --shadow-soft: 0 10px 30px -12px color-mix(in oklab, var(--navy) 18%, transparent);
-  --shadow-glow: 0 0 40px -6px color-mix(in oklab, var(--glow) 55%, transparent);
+  --gradient-brand: linear-gradient(135deg, var(--primary), color-mix(in oklab, var(--glow) 72%, var(--primary)));
+  --gradient-navy: linear-gradient(165deg, var(--navy-deep), var(--navy));
+  --shadow-soft: 0 14px 34px -22px color-mix(in oklab, var(--navy) 32%, transparent);
+  --shadow-glow: 0 14px 32px -18px color-mix(in oklab, var(--glow) 48%, transparent);
 }
 
 @layer base {
@@ -93,15 +93,27 @@
   }
   body {
     background-color: var(--color-background);
+    background-image:
+      radial-gradient(900px 420px at 100% -8%, color-mix(in oklab, var(--glow) 32%, transparent), transparent 62%),
+      radial-gradient(720px 380px at 0% 18%, color-mix(in oklab, var(--primary) 9%, transparent), transparent 58%);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-weight: 400;
+    line-height: 1.85;
+    text-wrap: pretty;
     overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
   }
   h1,
   h2,
   h3,
   h4 {
     font-family: var(--font-display);
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+  p {
+    line-height: 1.9;
   }
 }
 
@@ -130,9 +142,34 @@
   background-size: 44px 44px;
 }
 @utility glass {
-  background: color-mix(in oklab, var(--navy-foreground) 7%, transparent);
-  backdrop-filter: blur(12px);
-  border: 1px solid color-mix(in oklab, var(--navy-foreground) 14%, transparent);
+  background: color-mix(in oklab, var(--navy-foreground) 8%, transparent);
+  backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in oklab, var(--navy-foreground) 16%, transparent);
+}
+@utility title-wash {
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  border-radius: 0.55em;
+  padding: 0.04em 0.38em 0.06em;
+  background-image: linear-gradient(
+    100deg,
+    transparent,
+    color-mix(in oklab, var(--glow) 46%, transparent) 14%,
+    color-mix(in oklab, var(--glow) 26%, transparent) 86%,
+    transparent
+  );
+}
+@utility title-wash-ink {
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  border-radius: 0.55em;
+  padding: 0.02em 0.28em 0.04em;
+  background-image: linear-gradient(
+    180deg,
+    transparent 58%,
+    color-mix(in oklab, var(--primary) 16%, transparent) 58%,
+    color-mix(in oklab, var(--glow) 42%, transparent) 100%
+  );
 }
 
 @keyframes float-slow {
