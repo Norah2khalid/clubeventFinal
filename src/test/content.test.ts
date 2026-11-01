@@ -33,8 +33,14 @@ describe("event copy", () => {
     expect(UI.participationsTitle).toBe("مشاركات الفعالية");
     expect(UI.rankFirst).toBe("المركز الأول");
     expect(UI.rankSecond).toBe("المركز الثاني");
-    expect(UI.rankWaiting).toBe("بانتظار الترقية");
+    expect(UI.ideaTitle).toBe("عنوان الفكرة");
+    expect(UI.ideaDetails).toBe("تفاصيل الفكرة");
+    expect(UI.rankWaiting).toBe("بانتظار اختيار الفائزة");
+    expect(UI.promoteIdea).toBe("ترقية الفكرة");
     expect(UI.announceWinners).toBe("إعلان الفائزات");
+    expect(UI.organizerCode).toBe("رمز المسؤول");
+    expect(UI.organizerCodeWrong).toBe("رمز المسؤول غير صحيح.");
+    expect(UI.backToBoard).toBe("العودة إلى لوحة المشاركات");
     expect(UI.celebrationTitle).toBe("مبارك للفائزات!");
   });
 

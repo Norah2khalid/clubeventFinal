@@ -5,11 +5,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IdeaHelper } from "@/components/site/IdeaHelper";
 import { HELPERS, UI } from "@/lib/content";
 import { specialistPrompt } from "@/lib/idea-helpers";
+import { hashDeleteCode } from "@/lib/participations";
 import { toast } from "sonner";
 
 const { insert } = vi.hoisted(() => ({
-  insert: vi.fn(() => Promise.resolve({ error: null as { message: string } | null })),
+  insert: vi.fn(),
 }));
+
+function insertResult(result: { data: unknown; error: { message: string } | null }) {
+  return { select: () => Promise.resolve(result) };
+}
 
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
@@ -59,7 +64,19 @@ describe("idea helper controls", () => {
   beforeEach(() => {
     writeText.mockClear();
     insert.mockReset();
-    insert.mockResolvedValue({ error: null });
+    insert.mockImplementation((payload: Record<string, string>) =>
+      insertResult({
+        data: [
+          {
+            id: "saved-1",
+            winner_rank: null,
+            created_at: "2026-11-01T12:00:00.000Z",
+            ...payload,
+          },
+        ],
+        error: null,
+      }),
+    );
     vi.mocked(toast.success).mockClear();
     vi.mocked(toast.error).mockClear();
     Object.assign(navigator, { clipboard: { writeText } });
@@ -89,7 +106,7 @@ describe("idea helper controls", () => {
     expect(prompt.value).toBe(specialistPrompt(helper));
     expect(prompt).toHaveAttribute("readonly");
 
-    fireEvent.change(screen.getByLabelText(UI.idea), { target: { value: "XZ-idea-8841" } });
+    fireEvent.change(screen.getByLabelText(UI.ideaDetails), { target: { value: "XZ-idea-8841" } });
     fireEvent.click(screen.getByRole("button", { name: UI.copy }));
     expect(writeText).toHaveBeenCalledWith(specialistPrompt(helper));
     expect(specialistPrompt(helper)).not.toContain("XZ-idea-8841");
@@ -115,34 +132,48 @@ describe("idea helper controls", () => {
     fireEvent.change(screen.getByLabelText(UI.studentName), { target: { value: "نورة" } });
     fireEvent.click(submit);
     expect(insert).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith(UI.ideaTitleRequired);
+
+    fireEvent.change(screen.getByLabelText(UI.ideaTitle), { target: { value: "فكرتي الخاصة" } });
+    fireEvent.click(submit);
+    expect(insert).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalledWith(UI.participationEmpty);
 
-    fireEvent.change(screen.getByLabelText(UI.idea), {
-      target: { value: "  فكرتي الخاصة  \nتفاصيل الحل" },
+    fireEvent.change(screen.getByLabelText(UI.ideaDetails), {
+      target: { value: "تفاصيل الحل" },
     });
     fireEvent.click(submit);
     fireEvent.click(submit);
 
     await waitFor(() => expect(insert).toHaveBeenCalledTimes(1));
-    expect(insert).toHaveBeenCalledWith({
-      title: "فكرتي الخاصة",
-      student_name: "نورة",
-      body: "فكرتي الخاصة  \nتفاصيل الحل",
-      section: "problem_1",
-    });
+    const payload = insert.mock.calls[0]?.[0] as { delete_code_hash?: string };
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "فكرتي الخاصة",
+        student_name: "نورة",
+        body: "تفاصيل الحل",
+        section: "problem_1",
+      }),
+    );
+    expect(payload.delete_code_hash).toMatch(/^[0-9a-f]{64}$/);
+    const shown = screen.getByLabelText(UI.deleteCodeLabel).textContent ?? "";
+    expect(await hashDeleteCode(shown)).toBe(payload.delete_code_hash);
+    expect(shown.replace(/-/g, "")).not.toBe(payload.delete_code_hash);
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith(UI.participationSaved));
   });
 
   it("does not announce success when saving fails", async () => {
     const helper = HELPERS[3];
     if (!helper) throw new Error("missing helper");
-    insert.mockResolvedValue({ error: { message: "denied" } });
+    insert.mockImplementation(() => insertResult({ data: null, error: { message: "denied" } }));
     renderHelper(<IdeaHelper helper={helper} open onOpenChange={() => {}} />);
     fireEvent.change(screen.getByLabelText(UI.studentName), { target: { value: "سارة" } });
-    fireEvent.change(screen.getByLabelText(UI.idea), { target: { value: "حل للتحقق" } });
+    fireEvent.change(screen.getByLabelText(UI.ideaTitle), { target: { value: "حل للتحقق" } });
+    fireEvent.change(screen.getByLabelText(UI.ideaDetails), { target: { value: "تفاصيل التحقق" } });
     fireEvent.click(screen.getByRole("button", { name: UI.submitParticipation }));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(UI.participationFailed));
     expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText(UI.deleteCodeLabel)).not.toBeInTheDocument();
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({ section: "problem_4", student_name: "سارة" }),
     );

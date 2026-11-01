@@ -17,6 +17,7 @@ export type Database = {
           student_name: string;
           title: string;
           winner_rank: number | null;
+          delete_code_hash: string;
         };
         Insert: {
           body: string;
@@ -26,6 +27,7 @@ export type Database = {
           student_name: string;
           title?: string;
           winner_rank?: number | null;
+          delete_code_hash: string;
         };
         Update: {
           body?: string;
@@ -35,6 +37,7 @@ export type Database = {
           student_name?: string;
           title?: string;
           winner_rank?: number | null;
+          delete_code_hash?: string;
         };
         Relationships: [];
       };
@@ -135,8 +138,16 @@ export type Database = {
     Functions: {
       claim_first_admin: { Args: never; Returns: boolean };
       set_participation_winner: {
-        Args: { _id: string; _rank: number | null };
+        Args: { _code: string; _id: string; _rank: number | null };
         Returns: undefined;
+      };
+      organizer_authorized: {
+        Args: { _code: string };
+        Returns: boolean;
+      };
+      delete_participation: {
+        Args: { _code: string; _id: string };
+        Returns: boolean;
       };
       has_role: {
         Args: {

@@ -1,15 +1,21 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDown, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { UI } from "@/lib/content";
-import type { Participation } from "@/lib/participations";
+import {
+  formatParticipationDate,
+  normalizeDeleteCode,
+  participationLabel,
+  sectionLabel,
+  type Participation,
+} from "@/lib/participations";
 
 const ANNOUNCE_KEY = "event-winners-announced";
-const CONFETTI = ["#7c3aed", "#c4b5fd", "#f5d0fe", "#fde68a", "#ffffff", "#a78bfa"];
+const CONFETTI = ["#6d28d9", "#c4b5fd", "#f5d0fe", "#ddd6fe", "#ffffff", "#a78bfa"];
 
 async function loadParticipations() {
   const { data, error } = await supabase
@@ -38,35 +44,37 @@ function usePrefersReducedMotion() {
 
 export function ParticipationsBoard() {
   const queryClient = useQueryClient();
-  const isAdmin = useIsAdmin();
   const reducedMotion = usePrefersReducedMotion();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [organizerCode, setOrganizerCode] = useState("");
+  const [openIds, setOpenIds] = useState<string[]>([]);
+  const [visibleCount, setVisibleCount] = useState(6);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [promoteId, setPromoteId] = useState<string | null>(null);
   const [replaceRank, setReplaceRank] = useState<1 | 2 | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState<1 | 2 | null>(null);
   const [confirmAnnounce, setConfirmAnnounce] = useState(false);
   const [phase, setPhase] = useState<"board" | "countdown" | "celebration">("board");
-  const [count, setCount] = useState(6);
+  const [count, setCount] = useState(10);
   const query = useQuery({
     queryKey: ["participations"],
     queryFn: loadParticipations,
     retry: 1,
-    refetchInterval: phase === "board" ? 30_000 : false,
+    refetchInterval: phase === "board" ? 20_000 : false,
   });
 
   const rows = query.data ?? [];
   const first = rows.find((row) => row.winner_rank === 1) ?? null;
   const second = rows.find((row) => row.winner_rank === 2) ?? null;
   const list = rows.filter((row) => row.winner_rank == null);
-  const slots = Array.from({ length: Math.max(6, list.length) }, (_, index) => list[index] ?? null);
+  const shown = list.slice(0, visibleCount);
   const announceKey = pairKey(first, second);
 
   useEffect(() => {
     if (phase !== "countdown") return;
     const delay = reducedMotion ? 350 : 1000;
-    const timer = window.setInterval(() => setCount((current) => current - 1), delay);
+    const timer = window.setInterval(() => {
+      setCount((current) => (current <= 1 ? 0 : current - 1));
+    }, delay);
     return () => window.clearInterval(timer);
   }, [phase, reducedMotion]);
 
@@ -74,7 +82,7 @@ export function ParticipationsBoard() {
     if (phase !== "countdown" || count > 0) return;
     if (announceKey) sessionStorage.setItem(ANNOUNCE_KEY, announceKey);
     setPhase("celebration");
-    setCount(6);
+    setCount(10);
   }, [phase, count, announceKey]);
 
   useEffect(() => {
@@ -90,16 +98,29 @@ export function ParticipationsBoard() {
     await queryClient.invalidateQueries({ queryKey: ["participations"] });
   }
 
+  function organizerDraft() {
+    return normalizeDeleteCode(organizerCode).length >= 16 ? organizerCode : "";
+  }
+
   async function promote(id: string, rank: 1 | 2 | null) {
     if (pendingId) return;
+    const code = organizerDraft();
+    if (!code) {
+      toast.error(UI.organizerCodeRequired);
+      return;
+    }
     setPendingId(id);
-    const { error } = await supabase.rpc("set_participation_winner", { _id: id, _rank: rank });
+    const { error } = await supabase.rpc("set_participation_winner", {
+      _id: id,
+      _rank: rank,
+      _code: code,
+    });
     setPendingId(null);
     setPromoteId(null);
     setReplaceRank(null);
     setConfirmClear(null);
     if (error) {
-      toast.error(error.code === "42501" ? UI.adminOnly : UI.operationError);
+      toast.error(error.code === "42501" ? UI.organizerCodeWrong : UI.operationError);
       return;
     }
     toast.success(UI.winnerUpdated);
@@ -107,6 +128,10 @@ export function ParticipationsBoard() {
   }
 
   function requestPromote(id: string, rank: 1 | 2) {
+    if (!organizerDraft()) {
+      toast.error(UI.organizerCodeRequired);
+      return;
+    }
     const occupant = rank === 1 ? first : second;
     if (occupant && occupant.id !== id) {
       setReplaceRank(rank);
@@ -116,104 +141,166 @@ export function ParticipationsBoard() {
     void promote(id, rank);
   }
 
-  function requestAnnounce() {
-    if (!announceKey) return;
+  function requestClear(rank: 1 | 2) {
+    if (!organizerDraft()) {
+      toast.error(UI.organizerCodeRequired);
+      return;
+    }
+    setConfirmClear(rank);
+  }
+
+  async function organizerAccepted() {
+    const code = organizerDraft();
+    if (!code) {
+      toast.error(UI.organizerCodeRequired);
+      return false;
+    }
+    const { data, error } = await supabase.rpc("organizer_authorized", { _code: code });
+    if (error || data !== true) {
+      toast.error(UI.organizerCodeWrong);
+      return false;
+    }
+    return true;
+  }
+
+  async function requestAnnounce() {
+    if (!announceKey || phase !== "board") return;
+    if (!(await organizerAccepted())) return;
     const previous = sessionStorage.getItem(ANNOUNCE_KEY);
     if (previous && previous !== announceKey) {
       setConfirmAnnounce(true);
       return;
     }
     setConfirmAnnounce(false);
-    setCount(6);
+    setCount(10);
     setPhase("countdown");
   }
 
-  async function remove(id: string) {
+  async function confirmAnnounceNow() {
+    if (!(await organizerAccepted())) return;
+    setConfirmAnnounce(false);
+    setCount(10);
+    setPhase("countdown");
+  }
+
+  async function remove(id: string, code: string) {
     if (pendingId) return;
     setPendingId(id);
-    const { data, error } = await supabase
-      .from("participations")
-      .delete()
-      .eq("id", id)
-      .select("id");
+    const { data, error } = await supabase.rpc("delete_participation", { _id: id, _code: code });
     setPendingId(null);
-    if (error || !data?.length) {
-      toast.error(UI.operationError);
+    if (error || data !== true) {
+      toast.error(UI.deleteCodeWrong);
       return;
     }
-    if (openId === id) setOpenId(null);
-    setConfirmDeleteId(null);
+    setOpenIds((current) => current.filter((item) => item !== id));
     toast.success(UI.participationDeleted);
     await refresh();
   }
 
+  function toggle(id: string) {
+    setOpenIds((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+    );
+  }
+
   return (
-    <section id="participations" className="scroll-mt-8 px-4 py-10">
-      <div className="mx-auto max-w-3xl">
-        <h2 className="mb-3 text-center text-xl font-extrabold sm:text-2xl">
+    <section id="participations" className="participation-board scroll-mt-8 px-4 py-12">
+      <div className="mx-auto max-w-5xl">
+        <h2 className="mb-5 text-center text-2xl font-extrabold text-primary sm:text-3xl">
           {UI.participationsTitle}
         </h2>
-        <div className="relative overflow-hidden rounded-lg border bg-card p-3 shadow-soft sm:p-4">
+        <div className="rounded-[1.75rem] border border-primary/15 bg-white/55 p-3 shadow-soft backdrop-blur-sm sm:p-5">
           {query.isPending ? (
-            <div className="flex justify-center py-6">
+            <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
               <span className="sr-only">{UI.loading}</span>
             </div>
           ) : query.isError ? (
-            <p className="py-4 text-center text-sm text-destructive">{UI.participationsError}</p>
-          ) : phase === "countdown" ? (
-            <div
-              className="flex min-h-40 flex-col items-center justify-center py-6"
-              aria-live="assertive"
-            >
-              <p className="sr-only">{UI.countdownLabel}</p>
-              <p
-                key={count}
-                className="text-6xl font-black text-primary motion-safe:animate-fade-up sm:text-7xl"
-              >
-                {Math.max(count, 1)}
-              </p>
-            </div>
-          ) : phase === "celebration" ? (
-            <Celebration
-              first={first}
-              second={second}
-              reducedMotion={reducedMotion}
-              onClose={() => setPhase("board")}
-            />
+            <p className="py-6 text-center text-sm text-destructive">{UI.participationsError}</p>
           ) : (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <RankBox
-                  title={UI.rankFirst}
-                  row={first}
-                  prominent
-                  isAdmin={isAdmin}
-                  confirming={confirmClear === 1}
-                  pending={pendingId === first?.id}
-                  onAskClear={() => setConfirmClear(1)}
-                  onCancel={() => setConfirmClear(null)}
-                  onClear={() => first && promote(first.id, null)}
-                />
-                <RankBox
-                  title={UI.rankSecond}
-                  row={second}
-                  isAdmin={isAdmin}
-                  confirming={confirmClear === 2}
-                  pending={pendingId === second?.id}
-                  onAskClear={() => setConfirmClear(2)}
-                  onCancel={() => setConfirmClear(null)}
-                  onClear={() => second && promote(second.id, null)}
-                />
+            <div className="space-y-4">
+              {phase === "countdown" && count >= 1 && (
+                <div className="flex flex-col items-center py-2" aria-live="assertive">
+                  <p className="sr-only">{UI.countdownLabel}</p>
+                  <p
+                    key={count}
+                    className="participation-count bg-gradient-brand bg-clip-text text-7xl font-black text-transparent sm:text-8xl"
+                  >
+                    {count}
+                  </p>
+                </div>
+              )}
+              <div className="relative">
+                {phase === "celebration" && <CelebrationGlow reducedMotion={reducedMotion} />}
+                <div className="relative grid gap-3 sm:grid-cols-2">
+                  <RankCard
+                    title={UI.rankFirst}
+                    row={first}
+                    prominent
+                    celebrating={phase === "celebration"}
+                    open={first ? openIds.includes(first.id) : false}
+                    confirming={confirmClear === 1}
+                    pending={pendingId === first?.id}
+                    onToggle={() => first && toggle(first.id)}
+                    onAskClear={() => requestClear(1)}
+                    onCancel={() => setConfirmClear(null)}
+                    onClear={() => first && promote(first.id, null)}
+                    onDelete={(code) => first && remove(first.id, code)}
+                  />
+                  <RankCard
+                    title={UI.rankSecond}
+                    row={second}
+                    celebrating={phase === "celebration"}
+                    open={second ? openIds.includes(second.id) : false}
+                    confirming={confirmClear === 2}
+                    pending={pendingId === second?.id}
+                    onToggle={() => second && toggle(second.id)}
+                    onAskClear={() => requestClear(2)}
+                    onCancel={() => setConfirmClear(null)}
+                    onClear={() => second && promote(second.id, null)}
+                    onDelete={(code) => second && remove(second.id, code)}
+                  />
+                </div>
+                {phase === "celebration" && (
+                  <div className="relative mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <p className="flex items-center gap-2 text-lg font-black text-primary">
+                      <Sparkles className="h-5 w-5" />
+                      {UI.celebrationTitle}
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-full border-primary/30 bg-white/80"
+                      onClick={() => setPhase("board")}
+                    >
+                      {UI.backToBoard}
+                    </Button>
+                  </div>
+                )}
               </div>
-              {isAdmin && (
+              {phase === "board" && (
                 <div className="space-y-2">
+                  <label htmlFor="organizer-code" className="block text-xs font-bold text-primary">
+                    {UI.organizerCode}
+                  </label>
+                  <Input
+                    id="organizer-code"
+                    type="password"
+                    value={organizerCode}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    placeholder={UI.organizerCodeHint}
+                    className="h-9 bg-white"
+                    onChange={(event) => setOrganizerCode(event.target.value)}
+                  />
                   <Button
                     type="button"
                     size="sm"
-                    className="h-8 w-full bg-gradient-brand text-xs"
-                    disabled={!first || !second}
-                    onClick={requestAnnounce}
+                    className="h-10 w-full rounded-full bg-gradient-brand shadow-glow"
+                    disabled={!first || !second || organizerDraft() === ""}
+                    onClick={() => void requestAnnounce()}
                   >
                     {UI.announceWinners}
                   </Button>
@@ -222,45 +309,55 @@ export function ParticipationsBoard() {
                       text={UI.announceConfirm}
                       confirmLabel={UI.confirmAnnounce}
                       pending={false}
-                      onConfirm={() => {
-                        setConfirmAnnounce(false);
-                        setCount(6);
-                        setPhase("countdown");
-                      }}
+                      onConfirm={() => void confirmAnnounceNow()}
                       onCancel={() => setConfirmAnnounce(false)}
                     />
                   )}
                 </div>
               )}
-              <div
-                className={`grid grid-cols-2 gap-2 ${slots.length > 6 ? "max-h-80 overflow-y-auto pe-1" : ""}`}
-              >
-                {slots.map((row, index) => (
-                  <Slot
-                    key={row?.id ?? `empty-${index}`}
-                    number={index + 1}
-                    row={row}
-                    open={row ? openId === row.id : false}
-                    isAdmin={isAdmin}
-                    choosing={row ? promoteId === row.id : false}
-                    replaceRank={row && promoteId === row.id ? replaceRank : null}
-                    pending={row ? pendingId === row.id : false}
-                    deleting={row ? confirmDeleteId === row.id : false}
-                    onToggle={() => row && setOpenId(openId === row.id ? null : row.id)}
-                    onChoose={() => {
-                      if (!row) return;
-                      setReplaceRank(null);
-                      setPromoteId(promoteId === row.id ? null : row.id);
-                    }}
-                    onPromote={(rank) => row && requestPromote(row.id, rank)}
-                    onConfirmReplace={() => row && replaceRank && promote(row.id, replaceRank)}
-                    onCancelReplace={() => setReplaceRank(null)}
-                    onAskDelete={() => row && setConfirmDeleteId(row.id)}
-                    onCancelDelete={() => setConfirmDeleteId(null)}
-                    onDelete={() => row && remove(row.id)}
-                  />
-                ))}
-              </div>
+              {list.length === 0 ? (
+                <p className="py-3 text-center text-sm text-muted-foreground">
+                  {UI.participationsEmpty}
+                </p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {shown.map((row, index) => (
+                    <IdeaCard
+                      key={row.id}
+                      label={participationLabel(index)}
+                      row={row}
+                      open={openIds.includes(row.id)}
+                      choosing={promoteId === row.id}
+                      replaceRank={promoteId === row.id ? replaceRank : null}
+                      pending={pendingId === row.id}
+                      onToggle={() => toggle(row.id)}
+                      onChoose={() => {
+                        setReplaceRank(null);
+                        setPromoteId(promoteId === row.id ? null : row.id);
+                      }}
+                      onPromote={(rank) => requestPromote(row.id, rank)}
+                      onConfirmReplace={() => replaceRank && promote(row.id, replaceRank)}
+                      onCancelReplace={() => setReplaceRank(null)}
+                      onDelete={(code) => remove(row.id, code)}
+                    />
+                  ))}
+                </div>
+              )}
+              {list.length > 6 && (
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full border-primary/30"
+                    onClick={() =>
+                      setVisibleCount((current) => (current >= list.length ? 6 : current + 6))
+                    }
+                  >
+                    {visibleCount >= list.length ? UI.showLess : UI.showMore}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -269,42 +366,66 @@ export function ParticipationsBoard() {
   );
 }
 
-function RankBox({
+function RankCard({
   title,
   row,
   prominent = false,
-  isAdmin,
+  celebrating = false,
+  open,
   confirming,
   pending,
+  onToggle,
   onAskClear,
   onCancel,
   onClear,
+  onDelete,
 }: {
   title: string;
   row: Participation | null;
   prominent?: boolean;
-  isAdmin: boolean;
+  celebrating?: boolean;
+  open: boolean;
   confirming: boolean;
   pending: boolean;
+  onToggle: () => void;
   onAskClear: () => void;
   onCancel: () => void;
   onClear: () => void;
+  onDelete: (code: string) => void;
 }) {
   return (
     <article
-      className={`rounded-md border bg-background p-2 ${prominent ? "border-primary shadow-glow" : "border-primary/35"}`}
+      className={`rounded-3xl p-4 text-primary-foreground shadow-soft transition duration-300 ${
+        prominent
+          ? "bg-gradient-to-br from-primary via-[oklch(0.46_0.16_305)] to-[oklch(0.62_0.12_305)] shadow-glow"
+          : "bg-gradient-to-br from-[oklch(0.58_0.11_305)] to-[oklch(0.74_0.07_305)]"
+      } ${celebrating && prominent ? "scale-[1.02]" : ""}`}
     >
-      <h3
-        className={`font-extrabold ${prominent ? "text-sm text-primary" : "text-xs text-primary/80"}`}
-      >
-        {title}
-      </h3>
+      <div className="flex items-start justify-between gap-2">
+        <h3 className={`font-extrabold ${prominent ? "text-lg" : "text-base"}`}>{title}</h3>
+        {row && (
+          <button
+            type="button"
+            className="rounded-full bg-white/15 p-1 transition hover:bg-white/25"
+            aria-expanded={open}
+            aria-label={`${open ? UI.close : UI.showDetails} ${row.title}`}
+            onClick={onToggle}
+          >
+            <ChevronDown
+              className={`h-4 w-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+            />
+          </button>
+        )}
+      </div>
       {row ? (
-        <div className="mt-1">
-          <p className="truncate text-xs text-muted-foreground">{row.student_name}</p>
-          <p className={`truncate font-bold ${prominent ? "text-sm" : "text-xs"}`}>{row.title}</p>
-          {isAdmin &&
-            (confirming ? (
+        <div className="mt-3">
+          <p className={`${prominent ? "text-xl" : "text-lg"} font-black leading-snug`}>
+            {row.student_name}
+          </p>
+          <p className="mt-1 text-sm text-primary-foreground/85">{row.title}</p>
+          <Details open={open} body={row.body} meta={participationMeta(row)} light />
+          {confirming ? (
+            <div className="mt-2">
               <InlineConfirm
                 text={UI.clearWinner}
                 confirmLabel={UI.confirmReplace}
@@ -312,156 +433,235 @@ function RankBox({
                 onConfirm={onClear}
                 onCancel={onCancel}
               />
-            ) : (
-              <button
-                type="button"
-                className="mt-1 text-[11px] text-muted-foreground underline-offset-2 hover:underline"
-                onClick={onAskClear}
-              >
-                {UI.clearWinner}
-              </button>
-            ))}
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="mt-2 text-xs text-primary-foreground/80 underline-offset-2 hover:underline"
+              onClick={onAskClear}
+            >
+              {UI.clearWinner}
+            </button>
+          )}
+          <DeleteControl id={row.id} pending={pending} onDelete={onDelete} light />
         </div>
       ) : (
-        <p className="mt-2 text-xs text-muted-foreground">{UI.rankWaiting}</p>
+        <p className="mt-6 text-sm text-primary-foreground/80">{UI.rankWaiting}</p>
       )}
     </article>
   );
 }
 
-function Slot({
-  number,
+function IdeaCard({
+  label,
   row,
   open,
-  isAdmin,
   choosing,
   replaceRank,
   pending,
-  deleting,
   onToggle,
   onChoose,
   onPromote,
   onConfirmReplace,
   onCancelReplace,
-  onAskDelete,
-  onCancelDelete,
   onDelete,
 }: {
-  number: number;
-  row: Participation | null;
+  label: string;
+  row: Participation;
   open: boolean;
-  isAdmin: boolean;
   choosing: boolean;
   replaceRank: 1 | 2 | null;
   pending: boolean;
-  deleting: boolean;
   onToggle: () => void;
   onChoose: () => void;
   onPromote: (rank: 1 | 2) => void;
   onConfirmReplace: () => void;
   onCancelReplace: () => void;
-  onAskDelete: () => void;
-  onCancelDelete: () => void;
-  onDelete: () => void;
+  onDelete: (code: string) => void;
 }) {
-  const label = `المشاركة رقم ${number}`;
   return (
-    <article className="rounded-md border bg-background p-2">
-      <p className="text-[11px] font-semibold text-primary">{label}</p>
-      {row ? (
-        <div className="mt-1">
-          <div className="flex items-start justify-between gap-1">
-            <div className="min-w-0">
-              <p className="truncate text-xs text-muted-foreground">{row.student_name}</p>
-              <p className="truncate text-sm font-bold">{row.title}</p>
-            </div>
-            <button
+    <article className="rounded-3xl border border-primary/10 bg-white/90 p-4 shadow-soft transition duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-glow">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-primary">{label}</p>
+          <p className="mt-1 truncate text-sm text-muted-foreground">{row.student_name}</p>
+          <h3 className="truncate text-base font-extrabold">{row.title}</h3>
+        </div>
+        <button
+          type="button"
+          className="rounded-full bg-secondary p-2 text-primary transition hover:bg-accent"
+          aria-expanded={open}
+          aria-controls={`participation-${row.id}`}
+          aria-label={`${open ? UI.close : UI.showDetails} ${row.title}`}
+          onClick={onToggle}
+        >
+          <ChevronDown
+            className={`h-4 w-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+          />
+        </button>
+      </div>
+      <Details
+        id={`participation-${row.id}`}
+        open={open}
+        body={row.body}
+        meta={participationMeta(row)}
+      />
+      <div className="mt-3 space-y-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-8 w-full rounded-full border-primary/25 text-primary hover:bg-secondary"
+          disabled={pending}
+          aria-expanded={choosing}
+          onClick={onChoose}
+        >
+          {UI.promoteIdea}
+        </Button>
+        {choosing && (
+          <div className="grid gap-1">
+            <Button
               type="button"
-              className="rounded-sm p-1 text-muted-foreground hover:text-primary"
-              aria-expanded={open}
-              aria-controls={`participation-${row.id}`}
-              aria-label={`${open ? UI.close : UI.showDetails} ${row.title}`}
-              onClick={onToggle}
+              size="sm"
+              className="h-8 rounded-full bg-gradient-brand text-xs"
+              disabled={pending}
+              onClick={() => onPromote(1)}
             >
-              <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
-            </button>
+              {UI.promoteToFirst}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 rounded-full text-xs"
+              disabled={pending}
+              onClick={() => onPromote(2)}
+            >
+              {UI.promoteToSecond}
+            </Button>
           </div>
-          {isAdmin && (
-            <div className="mt-2 space-y-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-7 px-2 text-xs"
-                disabled={pending}
-                aria-expanded={choosing}
-                onClick={onChoose}
-              >
-                {UI.promote}
-              </Button>
-              {choosing && (
-                <div className="flex flex-wrap gap-1">
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="h-7 bg-gradient-brand px-2 text-xs"
-                    disabled={pending}
-                    onClick={() => onPromote(1)}
-                  >
-                    {UI.rankFirst}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-7 px-2 text-xs"
-                    disabled={pending}
-                    onClick={() => onPromote(2)}
-                  >
-                    {UI.rankSecond}
-                  </Button>
-                </div>
-              )}
-              {replaceRank && (
-                <InlineConfirm
-                  text={UI.replaceConfirm}
-                  confirmLabel={UI.confirmReplace}
-                  pending={pending}
-                  onConfirm={onConfirmReplace}
-                  onCancel={onCancelReplace}
-                />
-              )}
-            </div>
-          )}
-          {open && (
-            <div id={`participation-${row.id}`} className="mt-2 space-y-2 border-t pt-2">
-              <p className="whitespace-pre-wrap text-xs leading-relaxed">{row.body}</p>
-              {isAdmin &&
-                (deleting ? (
-                  <InlineConfirm
-                    text={UI.confirmDeleteParticipation}
-                    confirmLabel={UI.confirmDelete}
-                    pending={pending}
-                    onConfirm={onDelete}
-                    onCancel={onCancelDelete}
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    className="text-[11px] text-destructive"
-                    disabled={pending}
-                    onClick={onAskDelete}
-                  >
-                    {UI.delete}
-                  </button>
-                ))}
-            </div>
+        )}
+        {replaceRank && (
+          <InlineConfirm
+            text={UI.replaceConfirm}
+            confirmLabel={UI.confirmReplace}
+            pending={pending}
+            onConfirm={onConfirmReplace}
+            onCancel={onCancelReplace}
+          />
+        )}
+      </div>
+      <DeleteControl id={row.id} pending={pending} onDelete={onDelete} />
+    </article>
+  );
+}
+
+function DeleteControl({
+  id,
+  pending,
+  light = false,
+  onDelete,
+}: {
+  id: string;
+  pending: boolean;
+  light?: boolean;
+  onDelete: (code: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className={`text-xs ${light ? "mt-2 text-primary-foreground/80" : "mt-3 text-destructive"}`}
+        onClick={() => setOpen(true)}
+      >
+        {UI.deleteMine}
+      </button>
+    );
+  }
+  return (
+    <div className={`mt-3 space-y-2 rounded-2xl p-2 ${light ? "bg-white/15" : "bg-secondary/70"}`}>
+      <label htmlFor={`delete-${id}`} className="block text-xs font-bold">
+        {UI.deleteCodeLabel}
+      </label>
+      <Input
+        id={`delete-${id}`}
+        value={code}
+        autoComplete="off"
+        placeholder={UI.deleteCodeHint}
+        className="h-8 bg-white text-foreground"
+        onChange={(event) => setCode(event.target.value)}
+      />
+      <div className="flex flex-wrap gap-1">
+        <Button
+          type="button"
+          size="sm"
+          className="h-7 rounded-full px-3 text-xs"
+          disabled={pending || code.trim().length < 8}
+          onClick={() => onDelete(code)}
+        >
+          {UI.confirmDelete}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 rounded-full bg-white px-3 text-xs text-foreground"
+          onClick={() => {
+            setOpen(false);
+            setCode("");
+          }}
+        >
+          {UI.cancel}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function participationMeta(row: Participation) {
+  const sentAt = formatParticipationDate(row.created_at);
+  return [sectionLabel(row.section), sentAt ? `${UI.sentAt}: ${sentAt}` : ""]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function Details({
+  id,
+  open,
+  body,
+  meta,
+  light = false,
+}: {
+  id?: string;
+  open: boolean;
+  body: string;
+  meta?: string;
+  light?: boolean;
+}) {
+  return (
+    <div
+      className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+      inert={!open}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          id={id}
+          className={`mt-3 rounded-2xl p-3 ${light ? "bg-white/15 text-primary-foreground" : "bg-[oklch(0.97_0.02_305)] text-foreground"}`}
+        >
+          <p className="mb-1 text-xs font-bold">{UI.ideaDetails}</p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">{body}</p>
+          {meta && (
+            <p
+              className={`mt-3 text-xs ${light ? "text-primary-foreground/75" : "text-muted-foreground"}`}
+            >
+              {meta}
+            </p>
           )}
         </div>
-      ) : (
-        <p className="mt-2 text-xs text-muted-foreground">{UI.slotEmpty}</p>
-      )}
-    </article>
+      </div>
+    </div>
   );
 }
 
@@ -479,13 +679,13 @@ function InlineConfirm({
   onCancel: () => void;
 }) {
   return (
-    <div className="rounded-md border border-primary/20 bg-secondary/40 p-2">
-      <p className="text-[11px] leading-relaxed">{text}</p>
-      <div className="mt-1 flex flex-wrap gap-1">
+    <div className="rounded-2xl border border-primary/15 bg-secondary/70 p-2 text-foreground">
+      <p className="text-xs leading-relaxed">{text}</p>
+      <div className="mt-2 flex flex-wrap gap-1">
         <Button
           type="button"
           size="sm"
-          className="h-7 px-2 text-xs"
+          className="h-7 rounded-full px-3 text-xs"
           disabled={pending}
           onClick={onConfirm}
         >
@@ -495,7 +695,7 @@ function InlineConfirm({
           type="button"
           size="sm"
           variant="outline"
-          className="h-7 px-2 text-xs"
+          className="h-7 rounded-full px-3 text-xs"
           onClick={onCancel}
         >
           {UI.cancel}
@@ -505,28 +705,18 @@ function InlineConfirm({
   );
 }
 
-function Celebration({
-  first,
-  second,
-  reducedMotion,
-  onClose,
-}: {
-  first: Participation | null;
-  second: Participation | null;
-  reducedMotion: boolean;
-  onClose: () => void;
-}) {
-  const pieces = reducedMotion
-    ? []
-    : CONFETTI.flatMap((color, colorIndex) =>
-        [0, 1, 2, 3].map((copy) => ({
-          color,
-          left: `${(colorIndex * 17 + copy * 23) % 100}%`,
-          delay: `${(colorIndex + copy) * 70}ms`,
-        })),
-      );
+function CelebrationGlow({ reducedMotion }: { reducedMotion: boolean }) {
+  if (reducedMotion) return null;
+  const pieces = CONFETTI.flatMap((color, colorIndex) =>
+    [0, 1, 2, 3].map((copy) => ({
+      color,
+      left: `${(colorIndex * 17 + copy * 23) % 100}%`,
+      delay: `${(colorIndex + copy) * 70}ms`,
+    })),
+  );
   return (
-    <div className="relative min-h-44 py-2" aria-live="polite">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_center,oklch(0.78_0.1_305/0.45),transparent_68%)]" />
       {pieces.map((piece, index) => (
         <span
           key={`${piece.left}-${index}`}
@@ -534,47 +724,6 @@ function Celebration({
           style={{ left: piece.left, background: piece.color, animationDelay: piece.delay }}
         />
       ))}
-      <div className="relative flex items-start justify-between gap-2">
-        <h3 className="text-lg font-black text-primary">{UI.celebrationTitle}</h3>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs"
-          onClick={onClose}
-        >
-          {UI.closeCelebration}
-        </Button>
-      </div>
-      <div className="relative mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <WinnerBadge title={UI.rankFirst} row={first} prominent />
-        <WinnerBadge title={UI.rankSecond} row={second} />
-      </div>
     </div>
-  );
-}
-
-function WinnerBadge({
-  title,
-  row,
-  prominent = false,
-}: {
-  title: string;
-  row: Participation | null;
-  prominent?: boolean;
-}) {
-  if (!row) return null;
-  return (
-    <article
-      className={`rounded-md border bg-background p-3 ${prominent ? "border-2 border-primary shadow-glow" : "border-primary/40"}`}
-    >
-      <p
-        className={`font-extrabold ${prominent ? "text-sm text-primary" : "text-xs text-primary/80"}`}
-      >
-        {title}
-      </p>
-      <p className="mt-1 text-sm font-semibold">{row.student_name}</p>
-      <p className={`font-bold ${prominent ? "text-base" : "text-sm"}`}>{row.title}</p>
-    </article>
   );
 }
