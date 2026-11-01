@@ -34,12 +34,16 @@ export function IdeaHelper({
   helper,
   flush = false,
   showTitle = true,
+  showSummary = true,
+  showIntro = true,
   open,
   onOpenChange,
 }: {
   helper: Helper;
   flush?: boolean;
   showTitle?: boolean;
+  showSummary?: boolean;
+  showIntro?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -136,8 +140,12 @@ export function IdeaHelper({
       <div className="flex flex-wrap items-start gap-4">
         <div className="min-w-0 flex-1">
           {showTitle && <h4 className="text-lg font-bold leading-snug">{helper.title}</h4>}
-          <p className="mt-2 text-sm leading-relaxed text-navy-foreground/80">{helper.summary}</p>
-          <p className="mt-2 text-sm leading-relaxed text-navy-foreground/70">{UI.intro}</p>
+          {showSummary && (
+            <p className="mt-2 text-sm leading-relaxed text-navy-foreground/80">{helper.summary}</p>
+          )}
+          {showIntro && (
+            <p className="mt-2 text-sm leading-relaxed text-navy-foreground/70">{UI.intro}</p>
+          )}
           <Button
             type="button"
             variant="secondary"
