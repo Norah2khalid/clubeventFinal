@@ -5,6 +5,7 @@ import {
   GOALS,
   HELPERS,
   HERO,
+  HERO_KICKER,
   IMPACT,
   MECHANISM,
   NAV,
@@ -12,8 +13,9 @@ import {
 } from "@/lib/content";
 
 describe("event copy", () => {
-  it("keeps the hero, participation text, and both calls to action", () => {
+  it("keeps the hero, participation text, and the challenge call to action", () => {
     expect(HERO.title).toBe("ابتكار حلول رقمية لمواجهة التضليل الإعلامي");
+    expect(HERO_KICKER).toBe("فعالية النادي التقني في يوم الدراية الإعلامية المعلوماتية");
     expect(HERO.description).toBe(
       "نحو بيئة إعلامية أكثر وعيًا ومصداقية، من خلال ابتكار حلول رقمية تسهم في مواجهة التضليل الإعلامي وتعزيز موثوقية المحتوى",
     );
@@ -21,10 +23,14 @@ describe("event copy", () => {
       "اختر مشكلة واحدة من التحديات المطروحة، وابتكر لها حلًا يدعم جهود وزارة الإعلام في مواجهة التضليل الإعلامي. قدم فكرتك كموقع إلكتروني، أو تطبيق، أو حل رقمي مبتكر قابل للتطبيق",
     );
     expect(UI.explore).toBe("استكشف التحديات");
-    expect(UI.participate).toBe("قدّم مشاركتك");
-    expect(UI.prepare).toBe("تحسين فكرتي");
+    expect(UI.openHelper).toBe("المشاركة");
+    expect(UI.shareTitle).toBe("شارك فكرتك");
+    expect(UI.submitParticipation).toBe("رفع المشاركة");
     expect(UI.copy).toBe("نسخ البرومبت");
-    expect(UI.copyResult).toBe("نسخ النتيجة");
+    expect(NAV.map((item) => item.label)).toEqual(["آلية المشاركة", "الأهداف"]);
+    expect(UI.participationsTitle).toBe("مشاركات الفعالية");
+    expect(UI.winnerFirst).toBe("الفكرة الفائزة الأولى");
+    expect(UI.winnerSecond).toBe("الفكرة الفائزة الثانية");
   });
 
   it("lists the four platform problems and the two challenge-two assistants", () => {
