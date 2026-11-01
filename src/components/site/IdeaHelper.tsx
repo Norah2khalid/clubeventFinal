@@ -3,11 +3,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronDown, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { UI } from "@/lib/content";
 import { specialistPrompt, type Helper } from "@/lib/idea-helpers";
-import { participationTitle } from "@/lib/participations";
+import { cleanStudentName, participationTitle, validStudentName } from "@/lib/participations";
 import { BarcodeImage } from "./BarcodeImage";
 
 async function copyText(value: string) {
@@ -35,6 +36,7 @@ export function IdeaHelper({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const [studentName, setStudentName] = useState("");
   const [idea, setIdea] = useState("");
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
@@ -63,7 +65,12 @@ export function IdeaHelper({
   }
 
   async function submit() {
+    const name = cleanStudentName(studentName);
     const body = idea.trim();
+    if (!validStudentName(name)) {
+      toast.error(UI.studentNameRequired);
+      return;
+    }
     if (!body) {
       toast.error(UI.participationEmpty);
       return;
@@ -74,6 +81,7 @@ export function IdeaHelper({
     try {
       const { error } = await supabase.from("participations").insert({
         title: participationTitle(body),
+        student_name: name,
         body,
         section: helper.id,
       });
@@ -82,6 +90,7 @@ export function IdeaHelper({
         return;
       }
       toast.success(UI.participationSaved);
+      setStudentName("");
       setIdea("");
       await queryClient.invalidateQueries({ queryKey: ["participations"] });
     } catch {
@@ -129,6 +138,19 @@ export function IdeaHelper({
       >
         <div className="overflow-hidden">
           <div className="mt-4 space-y-4 rounded-lg bg-card p-4 text-card-foreground sm:p-5">
+            <div>
+              <label htmlFor={`${helper.id}-name`} className="mb-2 block text-sm">
+                {UI.studentName}
+              </label>
+              <Input
+                id={`${helper.id}-name`}
+                value={studentName}
+                placeholder={UI.studentNameHint}
+                maxLength={80}
+                required
+                onChange={(event) => setStudentName(event.target.value)}
+              />
+            </div>
             <h5 className="text-base font-bold">{UI.shareTitle}</h5>
             <div>
               <label htmlFor={`${helper.id}-idea`} className="mb-2 block text-sm">

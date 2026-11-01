@@ -5,9 +5,19 @@ export type Participation = {
   title: string;
   body: string;
   section: string;
+  student_name: string;
   winner_rank: number | null;
   created_at: string;
 };
+
+export function cleanStudentName(value: string) {
+  return value.replace(/\s+/g, " ").trim().slice(0, 80);
+}
+
+export function validStudentName(value: string) {
+  const name = cleanStudentName(value);
+  return name.length >= 2 && name.length <= 80;
+}
 
 export function participationTitle(body: string) {
   const line = body

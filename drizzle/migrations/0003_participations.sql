@@ -2,6 +2,7 @@
 CREATE TABLE public.participations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   title text NOT NULL,
+  student_name text NOT NULL,
   body text NOT NULL,
   section text NOT NULL CHECK (section IN ('problem_1','problem_2','problem_3','problem_4','application','ai_assistant')),
   winner_rank smallint CHECK (winner_rank IN (1, 2)),
@@ -27,6 +28,7 @@ CREATE POLICY "Participation inserts" ON public.participations
   WITH CHECK (
     winner_rank IS NULL
     AND section IN ('problem_1','problem_2','problem_3','problem_4','application','ai_assistant')
+    AND char_length(btrim(student_name)) BETWEEN 2 AND 80
     AND char_length(btrim(body)) BETWEEN 1 AND 8000
   );
 
@@ -66,8 +68,11 @@ AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     NEW.body := btrim(NEW.body);
+    NEW.student_name := btrim(regexp_replace(coalesce(NEW.student_name, ''), '\s+', ' ', 'g'));
     NEW.title := public.participation_title(NEW.body);
-    IF char_length(NEW.body) < 1 OR char_length(NEW.body) > 8000 OR char_length(NEW.title) < 1 THEN
+    IF char_length(NEW.student_name) < 2 OR char_length(NEW.student_name) > 80
+      OR char_length(NEW.body) < 1 OR char_length(NEW.body) > 8000
+      OR char_length(NEW.title) < 1 THEN
       RAISE EXCEPTION 'invalid participation' USING ERRCODE = '23514';
     END IF;
     NEW.winner_rank := NULL;
@@ -77,6 +82,7 @@ BEGIN
 
   NEW.id := OLD.id;
   NEW.title := OLD.title;
+  NEW.student_name := OLD.student_name;
   NEW.body := OLD.body;
   NEW.section := OLD.section;
   NEW.created_at := OLD.created_at;

@@ -103,9 +103,18 @@ describe("idea helper controls", () => {
     renderHelper(<IdeaHelper helper={helper} open onOpenChange={() => {}} />);
 
     const submit = screen.getByRole("button", { name: UI.submitParticipation });
+    expect(screen.getByLabelText(UI.studentName)).toHaveAttribute(
+      "placeholder",
+      UI.studentNameHint,
+    );
     fireEvent.click(submit);
     expect(insert).not.toHaveBeenCalled();
     expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith(UI.studentNameRequired);
+
+    fireEvent.change(screen.getByLabelText(UI.studentName), { target: { value: "نورة" } });
+    fireEvent.click(submit);
+    expect(insert).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalledWith(UI.participationEmpty);
 
     fireEvent.change(screen.getByLabelText(UI.idea), {
@@ -117,6 +126,7 @@ describe("idea helper controls", () => {
     await waitFor(() => expect(insert).toHaveBeenCalledTimes(1));
     expect(insert).toHaveBeenCalledWith({
       title: "فكرتي الخاصة",
+      student_name: "نورة",
       body: "فكرتي الخاصة  \nتفاصيل الحل",
       section: "problem_1",
     });
@@ -128,10 +138,13 @@ describe("idea helper controls", () => {
     if (!helper) throw new Error("missing helper");
     insert.mockResolvedValue({ error: { message: "denied" } });
     renderHelper(<IdeaHelper helper={helper} open onOpenChange={() => {}} />);
+    fireEvent.change(screen.getByLabelText(UI.studentName), { target: { value: "سارة" } });
     fireEvent.change(screen.getByLabelText(UI.idea), { target: { value: "حل للتحقق" } });
     fireEvent.click(screen.getByRole("button", { name: UI.submitParticipation }));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(UI.participationFailed));
     expect(toast.success).not.toHaveBeenCalled();
-    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ section: "problem_4" }));
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({ section: "problem_4", student_name: "سارة" }),
+    );
   });
 });

@@ -1,7 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { formatParticipationDate, participationTitle, sectionLabel } from "@/lib/participations";
+import {
+  cleanStudentName,
+  formatParticipationDate,
+  participationTitle,
+  sectionLabel,
+  validStudentName,
+} from "@/lib/participations";
 
 describe("participation title", () => {
+  it("requires a real student name and keeps it short", () => {
+    expect(validStudentName("  نورة  ")).toBe(true);
+    expect(cleanStudentName("  نورة   خالد ")).toBe("نورة خالد");
+    expect(validStudentName(" ")).toBe(false);
+    expect(validStudentName("ن")).toBe(false);
+  });
+
   it("uses the first non-empty line and keeps the rest out of the title", () => {
     expect(participationTitle("  فكرتي   الخاصة  \nتفاصيل الحل")).toBe("فكرتي الخاصة");
     expect(participationTitle("\n\nالسطر الثاني")).toBe("السطر الثاني");

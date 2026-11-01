@@ -14,6 +14,7 @@ export type Database = {
           created_at: string;
           id: string;
           section: string;
+          student_name: string;
           title: string;
           winner_rank: number | null;
         };
@@ -22,6 +23,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           section: string;
+          student_name: string;
           title?: string;
           winner_rank?: number | null;
         };
@@ -30,6 +32,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           section?: string;
+          student_name?: string;
           title?: string;
           winner_rank?: number | null;
         };

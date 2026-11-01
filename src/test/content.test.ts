@@ -25,12 +25,17 @@ describe("event copy", () => {
     expect(UI.explore).toBe("استكشف التحديات");
     expect(UI.openHelper).toBe("المشاركة");
     expect(UI.shareTitle).toBe("شارك فكرتك");
+    expect(UI.studentName).toBe("اسم الطالبة");
+    expect(UI.studentNameHint).toBe("اكتبي اسمك");
     expect(UI.submitParticipation).toBe("رفع المشاركة");
     expect(UI.copy).toBe("نسخ البرومبت");
     expect(NAV.map((item) => item.label)).toEqual(["آلية المشاركة", "الأهداف"]);
     expect(UI.participationsTitle).toBe("مشاركات الفعالية");
-    expect(UI.winnerFirst).toBe("الفكرة الفائزة الأولى");
-    expect(UI.winnerSecond).toBe("الفكرة الفائزة الثانية");
+    expect(UI.rankFirst).toBe("المركز الأول");
+    expect(UI.rankSecond).toBe("المركز الثاني");
+    expect(UI.rankWaiting).toBe("بانتظار الترقية");
+    expect(UI.announceWinners).toBe("إعلان الفائزات");
+    expect(UI.celebrationTitle).toBe("مبارك للفائزات!");
   });
 
   it("lists the four platform problems and the two challenge-two assistants", () => {
