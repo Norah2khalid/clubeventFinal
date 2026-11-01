@@ -8,7 +8,6 @@ import {
   Eye,
   Lightbulb,
   Megaphone,
-  Menu,
   MousePointerClick,
   Radar,
   Rocket,
@@ -19,7 +18,6 @@ import {
   Target,
   TrendingDown,
   Users,
-  X as XIcon,
   Zap,
   Info,
   Scale,
@@ -73,50 +71,11 @@ const goalIcons = [ShieldCheck, Sparkles, Users, Zap, Lightbulb];
 const impactIcons = [Search, TrendingDown, Brain, Info, Scale];
 
 function Header() {
-  const [open, setOpen] = useState(false);
   return (
     <header className="border-b border-border/70 bg-card">
       <div className="mx-auto max-w-7xl px-4 py-3">
         <Logos />
       </div>
-      <nav className="border-t border-border/60">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
-          <div className="hidden items-center gap-2 md:flex">
-            {NAV.map((n) => (
-              <a
-                key={n.href}
-                href={n.href}
-                className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-300 hover:bg-secondary hover:text-primary"
-              >
-                {n.label}
-              </a>
-            ))}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            aria-label={UI.menu}
-            onClick={() => setOpen(!open)}
-          >
-            {open ? <XIcon className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
-        </div>
-        {open && (
-          <div className="flex flex-col gap-1 border-t px-4 py-3 md:hidden">
-            {NAV.map((n) => (
-              <a
-                key={n.href}
-                href={n.href}
-                onClick={() => setOpen(false)}
-                className="rounded-full px-3 py-2 text-sm font-medium transition-colors duration-300 hover:bg-secondary"
-              >
-                {n.label}
-              </a>
-            ))}
-          </div>
-        )}
-      </nav>
     </header>
   );
 }
