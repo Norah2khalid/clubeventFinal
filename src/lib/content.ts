@@ -1,5 +1,5 @@
 import universityLogo from "@/assets/jouf-university-logo.jpg";
-import studentAffairsLogo from "@/assets/student-affairs-logo.jpg";
+import studentAffairsLogo from "@/assets/student-affairs-logo.png";
 import technicalClubLogo from "@/assets/technical-club-logo.jpg";
 
 // All editable site text lives here.
