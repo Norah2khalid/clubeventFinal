@@ -24,24 +24,15 @@ describe("event copy", () => {
     );
     expect(UI.explore).toBe("استكشف التحديات");
     expect(UI.openHelper).toBe("المشاركة");
-    expect(UI.shareTitle).toBe("شارك فكرتك");
+    expect(UI.externalParticipation).toBe("المشاركة خارج الموقع عبر الباركود.");
     expect(UI.studentName).toBe("اسم الطالبة");
-    expect(UI.studentNameHint).toBe("اكتبي اسمك");
-    expect(UI.submitParticipation).toBe("رفع المشاركة");
-    expect(UI.copy).toBe("نسخ البرومبت");
-    expect(NAV.map((item) => item.label)).toEqual(["آلية المشاركة", "الأهداف"]);
-    expect(UI.participationsTitle).toBe("مشاركات الفعالية");
-    expect(UI.rankFirst).toBe("المركز الأول");
-    expect(UI.rankSecond).toBe("المركز الثاني");
     expect(UI.ideaTitle).toBe("عنوان الفكرة");
     expect(UI.ideaDetails).toBe("تفاصيل الفكرة");
-    expect(UI.rankWaiting).toBe("بانتظار اختيار الفائزة");
-    expect(UI.promoteIdea).toBe("ترقية الفكرة");
-    expect(UI.announceWinners).toBe("إعلان الفائزات");
-    expect(UI.organizerCode).toBe("رمز المسؤول");
-    expect(UI.organizerCodeWrong).toBe("رمز المسؤول غير صحيح.");
-    expect(UI.backToBoard).toBe("العودة إلى لوحة المشاركات");
-    expect(UI.celebrationTitle).toBe("مبارك للفائزات!");
+    expect(UI.externalPrompt).toBe("البرومبت");
+    expect(UI.copy).toBe("نسخ البرومبت");
+    expect(NAV.map((item) => item.label)).toEqual(["آلية المشاركة", "الأهداف"]);
+    const visible = Object.values(UI).join(" ");
+    expect(visible).not.toMatch(/رفع المشاركة|مشاركات الفعالية|إعلان الفائزات|ترقية الفكرة/);
   });
 
   it("lists the four platform problems and the two challenge-two assistants", () => {
@@ -60,13 +51,13 @@ describe("event copy", () => {
     ).toEqual([
       [
         1,
-        '" راصد "',
+        "راصد",
         "توليد فكرة تطبيق لدعم التنظيم الإعلامي.",
         "شارك فكرتك أنت، مع الحفاظ على استقلاليتها وملكيتك لها.",
       ],
       [
         2,
-        '" راصد "',
+        "كاشف",
         "مساعد ذكي لرصد التضليل الإعلامي داخل منصات التواصل الإجتماعي.",
         "طوّر فكرتك أنت، مع الحفاظ على استقلاليتها وملكيتك لها.",
       ],

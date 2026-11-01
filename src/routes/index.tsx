@@ -28,7 +28,6 @@ import heroBg from "@/assets/hero-bg.jpg";
 import { Logos } from "@/components/site/Logos";
 import { Reveal, SectionHeading } from "@/components/site/Reveal";
 import { IdeaHelper } from "@/components/site/IdeaHelper";
-import { ParticipationsBoard } from "@/components/site/ParticipationsBoard";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -292,12 +291,10 @@ function Challenges() {
                       key={card.helperId}
                       className="flex h-full flex-col rounded-lg border border-navy-foreground/10 bg-navy-deep/50 p-6 transition-all hover:border-glow/50 hover:shadow-glow"
                     >
-                      <div className="mb-4 flex">
-                        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-brand font-display text-lg font-black text-primary-foreground shadow-glow">
-                          {card.number}
-                        </span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xl font-extrabold leading-snug">{card.number}</span>
+                        <h4 className="text-xl font-extrabold leading-snug">{card.name}</h4>
                       </div>
-                      <h4 className="text-xl font-extrabold leading-snug">{card.name}</h4>
                       <p className="mt-2 text-lg font-semibold leading-relaxed">{card.summary}</p>
                       <p className="mt-2 leading-relaxed text-navy-foreground/75">{card.note}</p>
                       <IdeaHelper
@@ -418,7 +415,6 @@ function Index() {
         <Hero />
         <Mechanism />
         <Challenges />
-        <ParticipationsBoard />
         <Goals />
         <Impact />
       </main>
